@@ -1,5 +1,5 @@
 <Solution>
-  <Folder Name="/ControlPlane/">
+  <Folder Name="/controlplane/">
     <Project Path="src/controlplane/McpGuard.Admin.Api/McpGuard.Admin.Api.csproj" />
     <Project Path="src/controlplane/McpGuard.Approvals/McpGuard.Approvals.csproj" />
     <Project Path="src/controlplane/McpGuard.CapabilityCatalog/McpGuard.CapabilityCatalog.csproj" />
@@ -11,7 +11,7 @@
     <Project Path="src/controlplane/McpGuard.ServerRegistry/McpGuard.ServerRegistry.csproj" />
     <Project Path="src/controlplane/McpGuard.TenantSettings/McpGuard.TenantSettings.csproj" />
   </Folder>
-  <Folder Name="/Runtime/">
+  <Folder Name="/runtime/">
     <Project Path="src/runtime/McpGuard.Audit/McpGuard.Audit.csproj" />
     <Project Path="src/runtime/McpGuard.Auth/McpGuard.Auth.csproj" />
     <Project Path="src/runtime/McpGuard.DlpContext/McpGuard.DlpContext.csproj" />
