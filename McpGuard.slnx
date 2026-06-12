@@ -1,0 +1,26 @@
+<Solution>
+  <Folder Name="/ControlPlane/">
+    <Project Path="src/controlplane/McpGuard.Admin.Api/McpGuard.Admin.Api.csproj" />
+    <Project Path="src/controlplane/McpGuard.Approvals/McpGuard.Approvals.csproj" />
+    <Project Path="src/controlplane/McpGuard.CapabilityCatalog/McpGuard.CapabilityCatalog.csproj" />
+    <Project Path="src/controlplane/McpGuard.DlpPolicyStore/McpGuard.DlpPolicyStore.csproj" />
+    <Project Path="src/controlplane/McpGuard.HealthChecks/McpGuard.HealthChecks.csproj" />
+    <Project Path="src/controlplane/McpGuard.PolicyStore/McpGuard.PolicyStore.csproj" />
+    <Project Path="src/controlplane/McpGuard.RedactionRules/McpGuard.RedactionRules.csproj" />
+    <Project Path="src/controlplane/McpGuard.SecretsProvider/McpGuard.SecretsProvider.csproj" />
+    <Project Path="src/controlplane/McpGuard.ServerRegistry/McpGuard.ServerRegistry.csproj" />
+    <Project Path="src/controlplane/McpGuard.TenantSettings/McpGuard.TenantSettings.csproj" />
+  </Folder>
+  <Folder Name="/Runtime/">
+    <Project Path="src/runtime/McpGuard.Audit/McpGuard.Audit.csproj" />
+    <Project Path="src/runtime/McpGuard.Auth/McpGuard.Auth.csproj" />
+    <Project Path="src/runtime/McpGuard.DlpContext/McpGuard.DlpContext.csproj" />
+    <Project Path="src/runtime/McpGuard.Gateway.Api/McpGuard.Gateway.Api.csproj" />
+    <Project Path="src/runtime/McpGuard.Observability/McpGuard.Observability.csproj" />
+    <Project Path="src/runtime/McpGuard.Policy/McpGuard.Policy.csproj" />
+    <Project Path="src/runtime/McpGuard.Redaction/McpGuard.Redaction.csproj" />
+    <Project Path="src/runtime/McpGuard.Secrets/McpGuard.Secrets.csproj" />
+    <Project Path="src/runtime/McpGuard.ToolRegistry/McpGuard.ToolRegistry.csproj" />
+    <Project Path="src/runtime/McpGuard.ToolRouter/McpGuard.ToolRouter.csproj" />
+  </Folder>
+</Solution>

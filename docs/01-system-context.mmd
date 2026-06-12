@@ -1,0 +1,20 @@
+%% Diagram: McpGuard system context | Author: Codex | Date: 2026-06-12
+%%{init: {'theme': 'dark'}}%%
+flowchart LR
+    admins["Platform Admins<br/>Registry, policy, review"]
+    mcpHosts["MCP Hosts and Clients<br/>AI apps, IDEs, chat clients"]
+
+    mcpGuard["McpGuard<br/>Open-source C# enterprise MCP gateway"]
+
+    mcpServers["Downstream MCP Servers<br/>Approved internal and third-party tools"]
+    identityProvider["Identity Provider<br/>OIDC/OAuth issuer"]
+    dlpServices["DLP and Redaction Services<br/>Classify sensitive data and apply masking rules"]
+    auditObservability["Audit and Observability<br/>Audit, metrics, logs, traces"]
+
+    mcpHosts -->|"MCP JSON-RPC<br/>Streamable HTTP"| mcpGuard
+    admins -->|"Manage registry and policy<br/>Admin API"| mcpGuard
+
+    mcpGuard -->|"Route approved MCP requests<br/>Streamable HTTP"| mcpServers
+    mcpGuard -->|"Validate identity and token audience<br/>OIDC/OAuth"| identityProvider
+    mcpGuard -->|"Classify and redact sensitive context<br/>DLP policy"| dlpServices
+    mcpGuard -->|"Emit decisions and telemetry<br/>Events/OpenTelemetry"| auditObservability

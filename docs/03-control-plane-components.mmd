@@ -1,0 +1,24 @@
+%% Diagram: McpGuard control plane components | Author: Codex | Date: 2026-06-12
+%%{init: {'theme': 'dark'}}%%
+flowchart LR
+    adminApi["Admin API<br/>ASP.NET Core"]
+    serverRegistry["Server Registry<br/>Approved MCP endpoints"]
+    capabilityCatalog["Capability Catalog<br/>Tools, resources, prompts"]
+    policyStore["Policy Store<br/>Access rules and approvals"]
+    dlpPolicy["DLP Policy Store<br/>Classifiers and sensitivity labels"]
+    redactionRules["Redaction Rules<br/>Masking, hashing, and allowlists"]
+    tenantSettings["Tenant Settings<br/>Org defaults and limits"]
+    approvalWorkflow["Approval Workflow<br/>Human review and change gates"]
+    secretsProvider["Secrets Provider<br/>Token and credential references"]
+    healthChecks["Health Checks<br/>Liveness and capability probes"]
+
+    adminApi -->|"Registers servers"| serverRegistry
+    serverRegistry -->|"Indexes capabilities"| capabilityCatalog
+    adminApi -->|"Publishes policy"| policyStore
+    adminApi -->|"Publishes DLP policy"| dlpPolicy
+    dlpPolicy -->|"Supplies masking rules"| redactionRules
+    adminApi -->|"Updates org settings"| tenantSettings
+    approvalWorkflow -->|"Approves changes"| policyStore
+    approvalWorkflow -->|"Approves DLP changes"| dlpPolicy
+    serverRegistry -->|"References credentials"| secretsProvider
+    healthChecks -->|"Verifies reachability"| serverRegistry

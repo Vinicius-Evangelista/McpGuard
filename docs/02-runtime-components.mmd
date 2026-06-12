@@ -1,0 +1,50 @@
+%% Diagram: McpGuard runtime components | Author: Codex | Date: 2026-06-12
+%%{init: {'theme': 'dark'}}%%
+flowchart LR
+    subgraph clientLayer["Client Layer"]
+        direction TB
+        agent["AI Agent"]
+        ide["IDE / Codex / Chat Client"]
+    end
+
+    subgraph gatewayCore["Gateway Core"]
+        direction TB
+        gateway["MCP Gateway API"]
+        auth["AuthN/AuthZ"]
+        policy["Policy Engine"]
+        dlpContext["DLP Context Service"]
+        redaction["Redaction Service"]
+        registry["Tool Registry"]
+        router["Tool Router"]
+        secrets["Secrets Broker"]
+        audit["Audit Log"]
+        observability["Observability"]
+    end
+
+    subgraph integrations["External Integrations"]
+        direction TB
+        github["GitHub MCP Server"]
+        jira["Jira MCP Server"]
+        database["Database MCP Server"]
+        internalApis["Internal APIs"]
+    end
+
+    agent -->|"MCP requests"| gateway
+    ide -->|"MCP requests"| gateway
+
+    gateway -->|"Validates identity"| auth
+    gateway -->|"Checks permissions"| policy
+    gateway -->|"Builds sensitivity context"| dlpContext
+    gateway -->|"Masks sensitive content"| redaction
+    gateway -->|"Discovers tools"| registry
+    gateway -->|"Routes tool calls"| router
+    gateway -->|"Brokers credentials"| secrets
+    gateway -->|"Records decisions"| audit
+    gateway -->|"Emits telemetry"| observability
+    policy -->|"Uses data labels"| dlpContext
+    redaction -->|"Reads masking rules"| dlpContext
+
+    router -->|"Invokes tools"| github
+    router -->|"Invokes tools"| jira
+    router -->|"Queries data"| database
+    router -->|"Calls approved APIs"| internalApis

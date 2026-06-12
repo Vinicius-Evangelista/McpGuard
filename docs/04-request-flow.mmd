@@ -1,0 +1,36 @@
+%% Diagram: McpGuard primary request flow | Author: Codex | Date: 2026-06-12
+%%{init: {'theme': 'dark'}}%%
+flowchart TD
+    initialize["MCP client sends initialize<br/>POST /mcp with bearer token"]
+    validateToken["McpGuard validates token<br/>Issuer, audience, scopes"]
+    negotiateSession["Negotiate protocol and capabilities<br/>Create Mcp-Session-Id"]
+    initializeResult["Return InitializeResult<br/>Session is ready"]
+
+    listTools["Client requests tools/list"]
+    buildDlpContext["Build DLP context<br/>Tenant, user, server, data labels"]
+    discoveryPolicy["Evaluate discovery policy<br/>Tenant, user, server access"]
+    routeDiscovery["Route tools/list<br/>Tool Router selects MCP server"]
+    downstreamList["Downstream MCP server returns tools"]
+    auditDiscovery["Audit discovery decision<br/>Record result metadata"]
+    listResponse["Return JSON-RPC tools/list response"]
+
+    callTool["Client requests tools/call"]
+    inspectRequest["Inspect prompt and arguments<br/>DLP classifiers"]
+    redactRequest["Redact or tokenize sensitive inputs<br/>Before routing"]
+    executionPolicy["Evaluate execution policy<br/>User, tool, arguments, tenant"]
+    policyDecision{"Allowed?"}
+    routeCall["Route tools/call<br/>Secrets Broker supplies credentials"]
+    downstreamResult["Downstream MCP server returns tool result"]
+    inspectResult["Inspect tool result<br/>DLP classifiers"]
+    redactResult["Redact sensitive output<br/>Before client response"]
+    auditAllowed["Audit allowed tool call<br/>Record decision and metadata"]
+    toolResponse["Return JSON-RPC tool result"]
+    auditBlocked["Audit blocked or approval-required attempt"]
+    errorResponse["Return JSON-RPC error response"]
+
+    initialize --> validateToken --> negotiateSession --> initializeResult
+    initializeResult --> listTools --> buildDlpContext --> discoveryPolicy --> routeDiscovery
+    routeDiscovery --> downstreamList --> auditDiscovery --> listResponse
+    listResponse --> callTool --> inspectRequest --> redactRequest --> executionPolicy --> policyDecision
+    policyDecision -->|"Yes"| routeCall --> downstreamResult --> inspectResult --> redactResult --> auditAllowed --> toolResponse
+    policyDecision -->|"No or approval required"| auditBlocked --> errorResponse
