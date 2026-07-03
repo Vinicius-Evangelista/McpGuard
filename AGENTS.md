@@ -36,11 +36,26 @@ in `Directory.Packages.props`.
 
 ## Testing guidelines
 
-No test projects are present yet. Add tests under `tests/` with matching names,
-such as `McpGuard.Policy.Tests` or `McpGuard.Gateway.Api.Tests`. Prefer xUnit or
-the first test framework introduced. Name tests `Method_State_ExpectedOutcome`.
-Run tests with `dotnet test <test-project>.csproj`, and cover policy, routing,
-redaction, and API behavior.
+Tests live under `tests/` with matching names: `McpGuard.<Area>.Tests`. Framework: xUnit.
+No mocking libraries (no Moq, no NSubstitute). Use hand-written **fakes** and **Object Mother**
+pattern for test data.
+
+Test naming: simplest descriptive sentence, first letter uppercase, snake_case, no `Should_`
+or `Returns` verbs. Examples: `Config_tool_registry_returns_only_configured_tools`,
+`Route_call_on_disallowed_tool_returns_blocked_and_never_invokes_downstream`,
+`Initialize_negotiates_protocol_and_returns_session_id`.
+
+Unit tests are in-process, no network, no Docker. Integration tests use **Testcontainers** to
+run the real sample downstream server as a container, plus `WebApplicationFactory<Program>`
+to host the gateway in-process.
+
+Run unit tests:
+- `dotnet test tests/McpGuard.ToolRegistry.Tests`
+- `dotnet test tests/McpGuard.Audit.Tests`
+- `dotnet test tests/McpGuard.ToolRouter.Tests`
+
+Run integration tests (requires Docker):
+- `dotnet test tests/McpGuard.Gateway.Api.Tests`
 
 ## Commit & pull request guidelines
 

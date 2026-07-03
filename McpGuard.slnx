@@ -19,8 +19,15 @@
     <Project Path="src/runtime/McpGuard.Observability/McpGuard.Observability.csproj" />
     <Project Path="src/runtime/McpGuard.Policy/McpGuard.Policy.csproj" />
     <Project Path="src/runtime/McpGuard.Redaction/McpGuard.Redaction.csproj" />
+    <Project Path="src/runtime/McpGuard.SampleTools.Server/McpGuard.SampleTools.Server.csproj" />
     <Project Path="src/runtime/McpGuard.Secrets/McpGuard.Secrets.csproj" />
     <Project Path="src/runtime/McpGuard.ToolRegistry/McpGuard.ToolRegistry.csproj" />
     <Project Path="src/runtime/McpGuard.ToolRouter/McpGuard.ToolRouter.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/McpGuard.Audit.Tests/McpGuard.Audit.Tests.csproj" />
+    <Project Path="tests/McpGuard.Gateway.Api.Tests/McpGuard.Gateway.Api.Tests.csproj" />
+    <Project Path="tests/McpGuard.ToolRegistry.Tests/McpGuard.ToolRegistry.Tests.csproj" />
+    <Project Path="tests/McpGuard.ToolRouter.Tests/McpGuard.ToolRouter.Tests.csproj" />
   </Folder>
 </Solution>

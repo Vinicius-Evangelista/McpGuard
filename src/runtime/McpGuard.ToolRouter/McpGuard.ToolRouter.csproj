@@ -6,4 +6,13 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\McpGuard.ToolRegistry\McpGuard.ToolRegistry.csproj" />
+    <ProjectReference Include="..\McpGuard.Audit\McpGuard.Audit.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol" />
+  </ItemGroup>
+
 </Project>
