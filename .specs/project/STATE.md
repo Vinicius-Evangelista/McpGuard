@@ -65,17 +65,38 @@ _(none yet)_
 
 ## Todos
 
-- [ ] When M1 code lands, update `AGENTS.md` testing section to match the snake_case +
-  no-mocks + Testcontainers conventions recorded under Decisions.
-- [ ] When M1 code lands, fix the solution-level `dotnet build McpGuard.slnx` failure
-  (currently documented in AGENTS.md as failing during restore with no diagnostics) or
-  update AGENTS.md to reflect the resolved state.
+- [x] When M1 code lands, update `AGENTS.md` testing section to match the snake_case +
+  no-mocks + Testcontainers conventions recorded under Decisions. — **Done 2026-07-03.**
+- [ ] Fix the solution-level `dotnet build McpGuard.slnx` failure (currently documented
+  in AGENTS.md as failing during restore with no diagnostics) or update AGENTS.md to
+  reflect the resolved state.
+- [ ] Run integration tests (Task 6) when Docker is available — tests build but require
+  Docker to execute.
+- [ ] Run spec-driven-eval against M1 spec to grade completion.
+
+## Lessons
+
+- **2026-07-03** — The official MCP C# SDK (v1.4.0) uses `MapMcp("/mcp")` (not
+  `MapMcpHttpTransport`) for the Streamable HTTP endpoint, and `AddMcpServer()` +
+  `WithHttpTransport()` for server registration. Handler registration is via
+  `WithListToolsHandler()` and `WithCallToolHandler()`. The `initialize` flow is handled
+  entirely by the SDK — no custom handler needed.
+- **2026-07-03** — `ILogger<T>` vs `ILogger`: class libraries that use `ILogger<T>` need
+  `Microsoft.Extensions.Logging.Abstractions`. Test projects that create `ILoggerFactory`
+  need `Microsoft.Extensions.Logging`. Central package management means adding the version
+  once in `Directory.Packages.props` and referencing it (versionless) from csproj files.
+- **2026-07-03** — The MCP SDK's `McpClient.CreateAsync` uses `HttpClientTransport` (not
+  `SseClientTransport` or `StreamableHttpClientTransport` — those names don't exist in v1.4.0).
+  The constructor takes `HttpClientTransportOptions` with an `Endpoint` property of type `Uri`.
+- **2026-07-03** — Top-level `Program.cs` generates an internal `Program` class. Tests using
+  `WebApplicationFactory<Program>` need a `public partial class Program {}` in a separate file.
 
 ## Session log
 
 - **2026-07-03** — M1 kickoff. Explored scaffold (20 empty projects, 4 architecture
   diagrams, no code, no refs, no packages). Ran the tlc-spec-driven Specify → Discuss →
   Design → Tasks flow. Captured 6 gray-area decisions via user discussion. Wrote
-  `.specs/project/`, `.specs/codebase/`, `.specs/features/m1-mvp-tool-gateway/`. Paused
-  before code per user instruction. Next session: execute tasks 1–7 then run
-  spec-driven-eval.
+  `.specs/project/`, `.specs/codebase/`, `.specs/features/m1-mvp-tool-gateway/`.
+- **2026-07-03** — M1 implementation. Executed tasks 1–7. All builds pass. Unit tests: 5/5
+  ToolRegistry, 4/4 Audit, 8/8 ToolRouter = 17 total. Integration tests build but require
+  Docker to execute. Updated README, STATE.

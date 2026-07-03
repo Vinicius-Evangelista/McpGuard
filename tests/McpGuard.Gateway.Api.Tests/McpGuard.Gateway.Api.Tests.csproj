@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="ModelContextProtocol" />
+    <PackageReference Include="ModelContextProtocol.AspNetCore" />
+    <PackageReference Include="Testcontainers" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\runtime\McpGuard.Gateway.Api\McpGuard.Gateway.Api.csproj" />
+    <ProjectReference Include="..\..\src\runtime\McpGuard.ToolRegistry\McpGuard.ToolRegistry.csproj" />
+    <ProjectReference Include="..\..\src\runtime\McpGuard.ToolRouter\McpGuard.ToolRouter.csproj" />
+    <ProjectReference Include="..\..\src\runtime\McpGuard.Audit\McpGuard.Audit.csproj" />
+  </ItemGroup>
+
+</Project>
