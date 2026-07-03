@@ -6,6 +6,7 @@ using McpGuard.ToolRouter;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using ModelContextProtocol.AspNetCore;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
@@ -18,6 +19,7 @@ builder.Services.AddSingleton<IToolRegistry, ConfigToolRegistry>();
 builder.Services.AddSingleton<IAuditSink, LoggerAuditSink>();
 builder.Services.AddSingleton<IMcpClientFactory, SdkMcpClientFactory>();
 builder.Services.AddSingleton<IToolRouter, DefaultToolRouter>();
+builder.Services.AddSingleton<ISessionMigrationHandler>(sp => new AuditSessionHandler(sp.GetRequiredService<IAuditSink>()));
 
 builder.Services.AddMcpServer()
     .WithHttpTransport()
@@ -35,10 +37,21 @@ app.MapMcp("/mcp");
 
 app.Run();
 
-ValueTask<ListToolsResult> ListToolsHandler(RequestContext<ListToolsRequestParams> context, CancellationToken ct)
+async ValueTask<ListToolsResult> ListToolsHandler(RequestContext<ListToolsRequestParams> context, CancellationToken ct)
 {
     var router = context.Services!.GetRequiredService<IToolRouter>();
+    var audit = context.Services!.GetRequiredService<IAuditSink>();
+    var sessionId = context.Server.SessionId ?? "";
+
     var visible = router.ListVisibleTools(ct);
+
+    await audit.LogAsync(new AuditEvent(
+        Timestamp: DateTimeOffset.UtcNow,
+        SessionId: sessionId,
+        Method: "tools/list",
+        ToolName: null,
+        Outcome: "tools.listed",
+        Reason: null), ct);
 
     var tools = visible.Select(t => new Tool
     {
@@ -46,7 +59,7 @@ ValueTask<ListToolsResult> ListToolsHandler(RequestContext<ListToolsRequestParam
         Description = t.Description
     }).ToList();
 
-    return new ValueTask<ListToolsResult>(new ListToolsResult { Tools = tools });
+    return new ListToolsResult { Tools = tools };
 }
 
 async ValueTask<CallToolResult> CallToolHandler(RequestContext<CallToolRequestParams> context, CancellationToken ct)
