@@ -35,5 +35,11 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.MapMcp("/mcp");
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+app.MapMcp("/mcp");
 
 app.Run();
