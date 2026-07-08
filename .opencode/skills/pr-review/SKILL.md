@@ -36,7 +36,7 @@ Run when the user asks to review a PR. The user may give you:
 
 ## Workflow
 
-Execute the steps in order. Steps 2 and 3 are deterministic gates; if they fail, stop and emit a `blocked` verdict. Steps 4–6 are judgment against the spec. Step 7 emits the verdict. Step 8 renders it. Step 9 posts it.
+Execute the steps in order. Steps 2 and 3 are deterministic gates; if they fail, stop and emit a `blocked` verdict. Steps 4–6 are judgment against the spec. Step 7 emits the verdict. Step 8 renders it. Step 9 posts it. Step 10 (follow-up reviews only) resolves addressed threads from a prior verdict.
 
 ### Step 1 — Fetch the PR diff
 
@@ -277,6 +277,70 @@ rm -f "$COMMENT_FILE"
 Confirm both the review URL and the summary comment URL in your final reply to the user. If `gh api` / `gh pr comment` fails (e.g. no network, no permission), print the rendered review payload and summary markdown so the user can post them manually.
 
 If the user explicitly asks you NOT to post, skip Step 9 and just show the verdict markdown + inline comments in your reply.
+
+### Step 10 — Resolve addressed review threads (follow-up only)
+
+Run this step on a **follow-up** review (i.e. the PR author has pushed commits since the prior verdict and asked you to re-check), never on the same pass as Step 9. The goal: close out threads whose gaps are now fixed, leave the rest open, and keep the thread index in sync with reality.
+
+#### 10a — Re-verify each prior gap against the PR head
+
+For every gap recorded in the prior verdict (Step 7), re-read the cited `file:line` at the current PR head and classify it:
+
+- **resolved** — the fix described in the gap (or an equivalent fix) is present in the diff surface. Cite the new `file:line` as evidence.
+- **unresolved** — the code is unchanged or still exhibits the gap. Do not resolve the thread.
+- **stale/superseded** — the file or hunk the comment anchored to no longer exists in the PR head (e.g. the file was deleted, or the line moved out of the diff). Treat as resolved only if the underlying concern is also gone; otherwise leave the thread open and note "anchor stale, concern still applies" in the reply.
+
+Do not invent new gaps in this step — Step 10 only closes prior findings. New findings go through a fresh Step 5–9 cycle.
+
+#### 10b — Reply on and resolve each resolved thread
+
+Use the GraphQL `pullRequestReviewThreads` connection to list threads on the PR (`isResolved`, `isOutdated`, `path`, first comment body). Match each resolved gap to its `threadId` by path + comment body. For each thread to close:
+
+1. **Reply** with the evidence, so the resolution is auditable on the thread itself.
+2. **Resolve** the thread.
+
+Both via `gh api graphql`:
+
+```bash
+PR_NUMBER=<number>
+
+# Reply on the thread (note: the payload returns .comment, not .thread).
+gh api graphql \
+  -f tid="<threadId>" \
+  -f body="Resolved: <what was fixed and where, citing file:line at the PR head>." \
+  -f query='mutation($tid: ID!, $body: String!) {
+    addPullRequestReviewThreadReply(input: { pullRequestReviewThreadId: $tid, body: $body }) {
+      comment { id }
+    }
+  }'
+
+# Resolve the thread.
+gh api graphql \
+  -f tid="<threadId>" \
+  -f query='mutation($tid: ID!) {
+    resolveReviewThread(input: { threadId: $tid }) { thread { id isResolved } }
+  }'
+```
+
+Only resolve threads you have replied on. Do not resolve a thread without leaving an evidence reply — a silent resolve is unauditable and looks like a mistake to the author.
+
+#### 10c — Report the thread index
+
+After 10b, print a compact index so the user sees the final state without opening GitHub:
+
+```
+thread index (PR #<n>, head <short-sha>):
+  resolved   <count>  — <one-line per gap: file:line — what was fixed>
+  unresolved <count>  — <one-line per gap: file:line — still open, why>
+```
+
+If all prior gaps are resolved, say so explicitly and suggest the PR is ready to merge (subject to gates and any new findings from a fresh Step 5 pass, which is out of scope for Step 10). If any remain unresolved, list them — the author still has work to do.
+
+#### 10d — When NOT to run Step 10
+
+- No prior verdict exists for this PR (no `evaluations/` or prior review comment to re-check). Skip to Step 9 only.
+- The user asked for a fresh review, not a re-check. Run Step 5–9 instead.
+- The PR head has not advanced since the prior verdict (same commit SHA). There is nothing to re-verify — prior gaps cannot have been addressed without a new commit. Report "no new commits since prior verdict; thread state unchanged" and stop.
 
 ## Boundaries
 
