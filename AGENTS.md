@@ -23,8 +23,9 @@ in `Directory.Packages.props`.
 - `dotnet run --project src/controlplane/McpGuard.Admin.Api/McpGuard.Admin.Api.csproj`:
   runs the admin API locally.
 
-Solution-level `dotnet build McpGuard.slnx` currently fails during restore with
-no diagnostics; verify it before relying on it.
+- `dotnet build McpGuard.slnx`: builds the full solution (25 projects).
+- `dotnet test McpGuard.slnx`: runs all unit and integration tests (integration
+  tests require Docker).
 
 ## Coding style & naming conventions
 
@@ -45,9 +46,11 @@ or `Returns` verbs. Examples: `Config_tool_registry_returns_only_configured_tool
 `Route_call_on_disallowed_tool_returns_blocked_and_never_invokes_downstream`,
 `Initialize_negotiates_protocol_and_returns_session_id`.
 
-Unit tests are in-process, no network, no Docker. Integration tests use **Testcontainers** to
-run the real sample downstream server as a container, plus `WebApplicationFactory<Program>`
-to host the gateway in-process.
+Unit tests are in-process, no network, no Docker. Integration tests use **Testcontainers**
+to run the real sample downstream server as a container and a real Kestrel-hosted
+gateway (not `WebApplicationFactory`, due to SSE streaming incompatibility with the
+in-memory `TestServer` handler). The test fixture uses raw JSON-RPC over `HttpClient`
+instead of the MCP SDK client to avoid SSE deadlocks.
 
 Run unit tests:
 - `dotnet test tests/McpGuard.ToolRegistry.Tests`

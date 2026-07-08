@@ -1,4 +1,3 @@
-using System.Text.Json;
 using McpGuard.Audit;
 using McpGuard.Gateway.Api;
 using McpGuard.ToolRegistry;
@@ -7,8 +6,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ModelContextProtocol.AspNetCore;
-using ModelContextProtocol.Protocol;
-using ModelContextProtocol.Server;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,11 +17,15 @@ builder.Services.AddSingleton<IAuditSink, LoggerAuditSink>();
 builder.Services.AddSingleton<IMcpClientFactory, SdkMcpClientFactory>();
 builder.Services.AddSingleton<IToolRouter, DefaultToolRouter>();
 builder.Services.AddSingleton<ISessionMigrationHandler>(sp => new AuditSessionHandler(sp.GetRequiredService<IAuditSink>()));
+builder.Services.AddSingleton<IMcpGatewayHandler, McpGatewayHandler>();
 
 builder.Services.AddMcpServer()
-    .WithHttpTransport()
-    .WithListToolsHandler(ListToolsHandler)
-    .WithCallToolHandler(CallToolHandler);
+    .WithHttpTransport(options =>
+    {
+        options.Stateless = builder.Configuration.GetValue<bool>("McpGuard:Stateless");
+    })
+    .WithListToolsHandler((ctx, ct) => ctx.Services!.GetRequiredService<IMcpGatewayHandler>().ListToolsAsync(ctx, ct))
+    .WithCallToolHandler((ctx, ct) => ctx.Services!.GetRequiredService<IMcpGatewayHandler>().CallToolAsync(ctx, ct));
 
 var app = builder.Build();
 
@@ -36,63 +37,3 @@ if (!app.Environment.IsDevelopment())
 app.MapMcp("/mcp");
 
 app.Run();
-
-async ValueTask<ListToolsResult> ListToolsHandler(RequestContext<ListToolsRequestParams> context, CancellationToken ct)
-{
-    var router = context.Services!.GetRequiredService<IToolRouter>();
-    var audit = context.Services!.GetRequiredService<IAuditSink>();
-    var sessionId = context.Server.SessionId ?? "";
-
-    var visible = router.ListVisibleTools(ct);
-
-    await audit.LogAsync(new AuditEvent(
-        Timestamp: DateTimeOffset.UtcNow,
-        SessionId: sessionId,
-        Method: "tools/list",
-        ToolName: null,
-        Outcome: "tools.listed",
-        Reason: null), ct);
-
-    var tools = visible.Select(t => new Tool
-    {
-        Name = t.Name,
-        Description = t.Description
-    }).ToList();
-
-    return new ListToolsResult { Tools = tools };
-}
-
-async ValueTask<CallToolResult> CallToolHandler(RequestContext<CallToolRequestParams> context, CancellationToken ct)
-{
-    var router = context.Services!.GetRequiredService<IToolRouter>();
-
-    var toolName = context.Params?.Name ?? "";
-    var sessionId = context.Server.SessionId ?? "";
-
-    var arguments = context.Params?.Arguments;
-    var argumentsJson = arguments is not null
-        ? JsonSerializer.SerializeToElement(arguments)
-        : JsonSerializer.SerializeToElement(new Dictionary<string, JsonElement>());
-
-    var routeResult = await router.RouteCallAsync(toolName, argumentsJson, sessionId, ct);
-
-    if (!routeResult.Allowed)
-    {
-        return new CallToolResult
-        {
-            Content = { new TextContentBlock { Text = routeResult.BlockReason ?? "tool call blocked" } },
-            IsError = true
-        };
-    }
-
-    if (routeResult.Result is CallToolResult downstreamResult)
-    {
-        return downstreamResult;
-    }
-
-    return new CallToolResult
-    {
-        Content = { new TextContentBlock { Text = "unexpected result type from downstream" } },
-        IsError = true
-    };
-}
