@@ -142,10 +142,15 @@ Output MUST be valid JSON matching `references/verdict-schema.md`. No prose arou
   "task_traceability": [
     { "task": "T-001", "status": "matches_diff" | "rogue" | "drift", "detail": "..." }
   ],
-  "gaps": ["concrete actionable gap 1"],
+  "gaps": [
+    { "file": "src/runtime/McpGuard.ToolRouter/IMcpClientFactory.cs", "line": 12,
+      "severity": "minor" | "major", "message": "concrete actionable gap" }
+  ],
   "recommended_action": "merge" | "address_gaps_then_merge" | "request_changes" | "block_and_rework"
 }
 ```
+
+Each entry in `gaps` carries `file` and `line` so it can be posted as an inline review comment on the exact line of the diff. When `verdict == "approved"`, `gaps` is `[]`.
 
 Verdict mapping:
 - `blocked` — protected-paths gate failed. Never anything else.
@@ -158,7 +163,11 @@ Verdict mapping:
 - `address_gaps_then_merge` ↔ `changes_requested` with minor gaps the author can fix quickly.
 - `merge` ↔ `approved`.
 
-### Step 8 — Render as markdown
+### Step 8 — Render the review
+
+The review has two parts: a **summary comment** (one PR-level comment with the verdict) and a set of **inline review comments** (one per gap, anchored to the exact `file`/`line` in the diff).
+
+#### 8a — Summary comment
 
 Render the verdict as a markdown PR comment. Structure:
 
@@ -189,8 +198,12 @@ Render the verdict as a markdown PR comment. Structure:
 | T-??? | rogue | diff adds behavior not in any task |
 
 ### Gaps
-1. <concrete gap>
-2. <concrete gap>
+<if no gaps: "None — no inline review comments.">
+<if gaps: a one-line-per-gap index, each linking to the inline comment. Format:
+1. [<severity>] `<file>:<line>` — <short message>
+2. [<severity>] `<file>:<line>` — <short message>
+
+See the inline review comments on the diff for details.
 
 ### Notes
 <anything the author should know>
@@ -198,22 +211,72 @@ Render the verdict as a markdown PR comment. Structure:
 
 Keep the markdown tight. No preamble, no "here is your review". The verdict line is the first thing the author reads.
 
-### Step 9 — Post the comment
+#### 8b — Inline review comments
 
-Write the markdown to a temp file and post it:
+For each entry in `gaps[]`, render an inline comment body. Each comment is anchored to its `file`/`line` in the diff. Body format:
+
+```
+**[<severity>] Gap — <short title>**
+
+<message>
+
+_Evidence: `<file>:<line>` · verdict: <verdict>_
+```
+
+`severity` is `minor` or `major`. Minor gaps are nits/contract cleanup/docs that don't block merge; major gaps are unmet acceptance criteria or missing tests. The summary comment's `Gaps` index links to these inline comments.
+
+### Step 9 — Post the review
+
+Posting has two steps: first the inline review comments (as a single pending GitHub review), then the summary comment. The inline comments must be posted as a review with `--request-changes` (when `verdict == "changes_requested"` or `"blocked"`) or `--comment` (when `verdict == "approved"`), so they land on the diff lines — not as a flat PR comment.
+
+#### 9a — Post inline comments as a GitHub review
+
+Build a JSON payload for `gh api` with one comment per gap, then submit it as a review. Write the payload to a temp file and post:
+
+```bash
+PR_NUMBER=<number>
+HEAD_SHA=<head oid from Step 1>
+REVIEW_FILE=$(mktemp --suffix=.json)
+
+# Build the review payload. One "comments" entry per gap.
+cat > "$REVIEW_FILE" <<EOF
+{
+  "commit_id": "$HEAD_SHA",
+  "event": "REQUEST_CHANGES",
+  "body": "See the inline comments for specific findings. Summary posted as a separate PR comment.",
+  "comments": [
+    { "path": "<gap.file>", "line": <gap.line>, "body": "<rendered inline comment body>" }
+  ]
+}
+EOF
+
+gh api repos/:owner/:repo/pulls/$PR_NUMBER/reviews --method POST --input "$REVIEW_FILE"
+rm -f "$REVIEW_FILE"
+```
+
+Use `"event": "REQUEST_CHANGES"` when `verdict` is `changes_requested` or `blocked`; use `"event": "COMMENT"` when `verdict` is `approved` (gaps should be empty in that case, so this branch is rare).
+
+**Line anchoring rules:**
+- `gap.line` must be a line that exists in the diff hunk for `gap.file` (i.e. a line present in the PR head). If the gap is about a missing piece (no line to anchor to), anchor to the first line of the relevant hunk and phrase the comment as "missing here" rather than "this line is wrong".
+- GitHub's review API uses `line` (the line in the new file) for single-line comments. For multi-line hunks, `line` is the last line of the range you want to highlight. Keep comments single-line-anchored unless the gap spans a clear range.
+- If the file was deleted in the PR, inline comments cannot be posted on it — fall back to adding the gap to the summary comment's `Gaps` index with a note "(file deleted — see summary)".
+
+#### 9b — Post the summary comment
+
+Write the summary markdown (from 8a) to a temp file and post it as a regular PR comment:
 
 ```bash
 COMMENT_FILE=$(mktemp)
 cat > "$COMMENT_FILE" <<'EOF'
-<rendered markdown>
+<rendered summary markdown>
 EOF
 gh pr comment "$PR_NUMBER" --body-file "$COMMENT_FILE"
 rm -f "$COMMENT_FILE"
 ```
 
-Confirm the comment URL in your final reply to the user. If `gh pr comment` fails (e.g. no network, no permission), print the rendered markdown so the user can paste it manually.
+Confirm both the review URL and the summary comment URL in your final reply to the user. If `gh api` / `gh pr comment` fails (e.g. no network, no permission), print the rendered review payload and summary markdown so the user can post them manually.
 
-If the user explicitly asks you NOT to post, skip Step 9 and just show the verdict markdown in your reply.
+If the user explicitly asks you NOT to post, skip Step 9 and just show the verdict markdown + inline comments in your reply.
 
 ## Boundaries
 
@@ -234,4 +297,5 @@ If the user explicitly asks you NOT to post, skip Step 9 and just show the verdi
 - Modifying the code under review to make a gate pass.
 - Emitting prose instead of the JSON verdict in Step 7.
 - Posting the verdict as approved without confidence >= 0.7 — if confidence is lower, default to `changes_requested` with a note that the judge is uncertain.
-- Running `gh pr review --approve` or `--request-changes` — v1 only posts a comment, never sets the review state. Opt-in later once verdict quality is trusted.
+- Running `gh pr review --approve` or `--request-changes` — the skill posts via `gh api .../reviews` with inline comments + a summary PR comment, never `gh pr review`.
+- Dumping all findings into one big PR comment. Each gap is an inline review comment anchored to its `file`/`line`; the PR comment is only the summary.

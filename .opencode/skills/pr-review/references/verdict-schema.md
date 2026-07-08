@@ -31,7 +31,10 @@ The PR review verdict is a single JSON object. Step 7 of the skill emits exactly
       "detail": "one-line explanation"
     }
   ],
-  "gaps": ["concrete actionable gap 1", "concrete actionable gap 2"],
+  "gaps": [
+    { "file": "src/runtime/McpGuard.ToolRouter/IMcpClientFactory.cs", "line": 12,
+      "severity": "minor" | "major", "message": "concrete actionable gap" }
+  ],
   "recommended_action": "merge" | "address_gaps_then_merge" | "request_changes" | "block_and_rework"
 }
 ```
@@ -81,9 +84,15 @@ One entry per task in the matched `tasks.md`, plus one `rogue` entry for any dif
 - `detail`: one-line explanation.
 
 ### `gaps` (required)
-An array of concrete, actionable strings the author can address. Each gap must be specific enough to act on: cite the file and what is missing. "Tests are weak" is not a gap; "M1-R3 is satisfied by ConfigToolRegistry.cs:42 but no test in the diff asserts the allowlist filters disallowed tools" is.
+An array of objects, one per actionable finding. Each gap is posted as an **inline review comment** anchored to its `file`/`line` in the diff (Step 9a), so it must be specific enough to act on.
 
-When `verdict == "approved"`, `gaps` is `[]`.
+Each entry:
+- `file` (required) — path within the diff surface to anchor the inline comment to.
+- `line` (required) — line number in the PR head version of `file` that the comment anchors to. Must be a line present in the diff hunk. If the gap is about a missing piece, anchor to the first line of the relevant hunk and phrase the comment as "missing here".
+- `severity` (required) — `"minor"` (nits, contract cleanup, docs — does not block merge) or `"major"` (unmet acceptance criteria, missing tests — blocks merge).
+- `message` (required) — concrete, actionable text. Cite the file and what is missing. "Tests are weak" is not a gap; `{"file": "...", "line": 42, "severity": "major", "message": "M1-R3 is satisfied by ConfigToolRegistry.cs:42 but no test in the diff asserts tools/list returns only approved tools."}` is.
+
+When `verdict == "approved"`, `gaps` is `[]` and no inline comments are posted.
 
 ### `recommended_action` (required)
 The human-facing version of the verdict. Maps 1:1 to `verdict` with a severity split for `changes_requested`:
@@ -99,6 +108,7 @@ The human-facing version of the verdict. Maps 1:1 to `verdict` with a severity s
 - `verdict == "approved"` ⇒ `gaps == []` and `recommended_action == "merge"`.
 - `confidence < 0.7` ⇒ `verdict` should be `changes_requested` unless the PR is trivially clean.
 - Every `satisfied` requirement must have a non-empty `evidence` in the diff surface. No evidence ⇒ `gap`.
+- Every entry in `gaps` must have `file`, `line`, `severity`, and `message`. `line` must be a line present in the diff hunk for `file` (the PR head version).
 
 ## Example (approved, no spec matched)
 
@@ -137,7 +147,9 @@ The human-facing version of the verdict. Maps 1:1 to `verdict` with a severity s
     { "task": "T-002", "status": "matches_diff", "detail": "implements the allowlist filter" }
   ],
   "gaps": [
-    "M1-R3 is satisfied by ConfigToolRegistry.cs:42 but no test in the diff asserts tools/list returns only approved tools."
+    { "file": "tests/McpGuard.Gateway.Api.Tests/EndToEndTests.cs", "line": 42,
+      "severity": "major",
+      "message": "M1-R3 is satisfied by ConfigToolRegistry.cs:42 but no test in the diff asserts tools/list returns only approved tools." }
   ],
   "recommended_action": "address_gaps_then_merge"
 }
@@ -164,7 +176,9 @@ The human-facing version of the verdict. Maps 1:1 to `verdict` with a severity s
   "requirements": [],
   "task_traceability": [],
   "gaps": [
-    "Remove the committed bin/ output and add it to .gitignore if not already present."
+    { "file": "src/runtime/McpGuard.Gateway.Api/bin/Debug/net10.0/McpGuard.Gateway.Api.dll", "line": 1,
+      "severity": "major",
+      "message": "Remove the committed bin/ output and add it to .gitignore if not already present." }
   ],
   "recommended_action": "block_and_rework"
 }
