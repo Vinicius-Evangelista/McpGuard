@@ -12,21 +12,13 @@ public sealed class Logger_audit_sink
 
     public Logger_audit_sink(ITestOutputHelper output) => _output = output;
 
-    private static (ILogger<LoggerAuditSink> logger, CapturingLoggerProvider provider) CreateSink()
-    {
-        var provider = new CapturingLoggerProvider();
-        using var factory = LoggerFactory.Create(builder => builder.AddProvider(provider));
-        var logger = factory.CreateLogger<LoggerAuditSink>();
-        return (logger, provider);
-    }
-
     [Fact]
     public async Task Writes_one_json_line_per_event()
     {
         var (logger, provider) = CreateSink();
         var sink = new LoggerAuditSink(logger);
 
-        var evt = ObjectMother.InitializedEvent();
+        var evt = InitializedEvent();
         await sink.LogAsync(evt, CancellationToken.None);
 
         Assert.Single(provider.GetLogLines());
@@ -38,7 +30,7 @@ public sealed class Logger_audit_sink
         var (logger, provider) = CreateSink();
         var sink = new LoggerAuditSink(logger);
 
-        var evt = ObjectMother.AllowedEvent();
+        var evt = AllowedEvent();
         await sink.LogAsync(evt, CancellationToken.None);
 
         var json = provider.GetLogLines()[0];
@@ -61,7 +53,7 @@ public sealed class Logger_audit_sink
         var (logger, provider) = CreateSink();
         var sink = new LoggerAuditSink(logger);
 
-        var evt = ObjectMother.BlockedEvent();
+        var evt = BlockedEvent();
         await sink.LogAsync(evt, CancellationToken.None);
 
         var json = provider.GetLogLines()[0];
@@ -78,7 +70,7 @@ public sealed class Logger_audit_sink
         var (logger, provider) = CreateSink();
         var sink = new LoggerAuditSink(logger);
 
-        var evt = ObjectMother.InitializedEvent();
+        var evt = InitializedEvent();
         await sink.LogAsync(evt, CancellationToken.None);
 
         var json = provider.GetLogLines()[0];
@@ -87,6 +79,38 @@ public sealed class Logger_audit_sink
 
         Assert.False(root.TryGetProperty("reason", out _));
     }
+
+    private static (ILogger<LoggerAuditSink> logger, CapturingLoggerProvider provider) CreateSink()
+    {
+        var provider = new CapturingLoggerProvider();
+        using var factory = LoggerFactory.Create(builder => builder.AddProvider(provider));
+        var logger = factory.CreateLogger<LoggerAuditSink>();
+        return (logger, provider);
+    }
+
+    private static AuditEvent InitializedEvent(string sessionId = "test-session-1") => new(
+        Timestamp: DateTimeOffset.Parse("2026-07-03T12:00:00Z"),
+        SessionId: sessionId,
+        Method: "initialize",
+        ToolName: null,
+        Outcome: "initialized",
+        Reason: null);
+
+    private static AuditEvent AllowedEvent(string toolName = "echo", string sessionId = "test-session-1") => new(
+        Timestamp: DateTimeOffset.Parse("2026-07-03T12:00:02Z"),
+        SessionId: sessionId,
+        Method: "tools/call",
+        ToolName: toolName,
+        Outcome: "tools.call.allowed",
+        Reason: null);
+
+    private static AuditEvent BlockedEvent(string toolName = "dangerous", string sessionId = "test-session-1") => new(
+        Timestamp: DateTimeOffset.Parse("2026-07-03T12:00:03Z"),
+        SessionId: sessionId,
+        Method: "tools/call",
+        ToolName: toolName,
+        Outcome: "tools.call.blocked",
+        Reason: "tool 'dangerous' is not approved for execution");
 
     private sealed class CapturingLoggerProvider : ILoggerProvider
     {
