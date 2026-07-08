@@ -1,16 +1,15 @@
+using System.Net;
 using System.Text.Json;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 using McpGuard.Audit;
+using McpGuard.Gateway.Api;
 using McpGuard.Gateway.Api.Tests.Fakes;
 using McpGuard.ToolRegistry;
 using McpGuard.ToolRouter;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using ModelContextProtocol.Client;
-using ModelContextProtocol.Protocol;
+using ModelContextProtocol.AspNetCore;
 using Xunit;
 
 namespace McpGuard.Gateway.Api.Tests;
@@ -18,110 +17,120 @@ namespace McpGuard.Gateway.Api.Tests;
 public sealed class IntegrationTestFixture : IAsyncLifetime
 {
     private IContainer? _container;
-    private WebApplicationFactory<Program>? _factory;
-    private McpClient? _mcpClient;
+    private WebApplication? _gatewayApp;
     private HttpClient? _httpClient;
 
     public CapturingAuditSink AuditSink { get; } = new();
-    public McpClient McpClient => _mcpClient ?? throw new InvalidOperationException("McpClient not initialized");
-    public string DownstreamBaseUrl { get; private set; } = "";
+    public HttpClient HttpClient => _httpClient ?? throw new InvalidOperationException("HttpClient not initialized");
 
     public async Task InitializeAsync()
     {
-        var dockerfilePath = Path.GetFullPath(
-            Path.Combine("..", "..", "..", "..", "src", "runtime", "McpGuard.SampleTools.Server", "Dockerfile"));
-        var contextPath = Path.GetFullPath(Path.Combine("..", "..", "..", ".."));
+        var repoRoot = Path.GetFullPath(
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory!, "..", "..", "..", "..", ".."));
+        var dockerfileDir = Path.Combine(repoRoot, "src", "runtime", "McpGuard.SampleTools.Server");
 
-        var image = new ImageFromDockerfileBuilder()
-            .WithDockerfile(dockerfilePath)
-            .WithDockerfileDirectory(contextPath)
+        var futureImage = new ImageFromDockerfileBuilder()
+            .WithDockerfile("Dockerfile")
+            .WithDockerfileDirectory(dockerfileDir)
+            .WithContextDirectory(repoRoot)
             .Build();
 
-        _container = new ContainerBuilder(image)
+        await futureImage.CreateAsync();
+
+        _container = new ContainerBuilder(futureImage)
             .WithPortBinding(8080, true)
             .WithWaitStrategy(Wait.ForUnixContainer()
-                .UntilHttpRequestIsSucceeded(r => r.ForPort(8080).ForPath("/").WithMethod(HttpMethod.Get)))
+                .UntilHttpRequestIsSucceeded(r => r.ForPort(8080).ForPath("/").ForStatusCodeMatching(code => code == HttpStatusCode.OK || code == HttpStatusCode.NotFound)))
             .Build();
 
         await _container.StartAsync();
 
-        var port = _container.GetMappedPublicPort(8080);
-        DownstreamBaseUrl = $"http://localhost:{port}/mcp";
+        var downstreamPort = _container.GetMappedPublicPort(8080);
+        var downstreamBaseUrl = $"http://localhost:{downstreamPort}/mcp";
 
-        _factory = new GatewayWebApplicationFactory(AuditSink, DownstreamBaseUrl);
-        _httpClient = _factory.CreateClient();
-        var baseAddress = _httpClient.BaseAddress!;
-
-        var transportOptions = new HttpClientTransportOptions
+        var downstreamUrl = new Uri(downstreamBaseUrl);
+        var testTools = new List<ToolRegistration>
         {
-            Endpoint = new Uri(baseAddress, "/mcp")
-        };
-        var transport = new HttpClientTransport(transportOptions, _factory.Services.GetRequiredService<ILoggerFactory>());
-
-        var clientOptions = new McpClientOptions
-        {
-            ClientInfo = new Implementation { Name = "McpGuardTestClient", Version = "1.0.0" }
+            new("echo", "Echoes the input message", downstreamUrl, Allowed: true, Visible: true),
+            new("add", "Adds two integers", downstreamUrl, Allowed: true, Visible: true),
+            new("secret", "An allowed but invisible tool", downstreamUrl, Allowed: true, Visible: false),
+            new("dangerous", "A hidden, disallowed tool", downstreamUrl, Allowed: false, Visible: false),
         };
 
-        _mcpClient = await McpClient.CreateAsync(transport, clientOptions,
-            _factory.Services.GetRequiredService<ILoggerFactory>(), CancellationToken.None);
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            EnvironmentName = "Testing"
+        });
+        Console.WriteLine("[FIXTURE] WebApplicationBuilder created, configuring...");
+        builder.WebHost.UseUrls("http://127.0.0.1:5099");
+
+        builder.Services.AddSingleton<IToolRegistry>(new TestToolRegistry(testTools));
+        builder.Services.AddSingleton<IAuditSink>(AuditSink);
+        builder.Services.AddSingleton<IMcpClientFactory, SdkMcpClientFactory>();
+        builder.Services.AddSingleton<IToolRouter, DefaultToolRouter>();
+        builder.Services.AddSingleton<IMcpGatewayHandler, McpGatewayHandler>();
+
+        builder.Services.AddMcpServer()
+            .WithHttpTransport(options =>
+            {
+                options.Stateless = builder.Configuration.GetValue<bool>("McpGuard:Stateless");
+            })
+            .WithListToolsHandler((ctx, ct) => ctx.Services!.GetRequiredService<IMcpGatewayHandler>().ListToolsAsync(ctx, ct))
+            .WithCallToolHandler((ctx, ct) => ctx.Services!.GetRequiredService<IMcpGatewayHandler>().CallToolAsync(ctx, ct));
+
+        _gatewayApp = builder.Build();
+        _gatewayApp.MapMcp("/mcp");
+
+        await _gatewayApp.StartAsync();
+
+        var gatewayUrl = _gatewayApp.Urls.First();
+        _httpClient = new HttpClient { BaseAddress = new Uri(gatewayUrl), Timeout = TimeSpan.FromSeconds(30) };
+    }
+
+    public async Task<JsonElement> SendJsonRpcAsync(object request)
+    {
+        var json = JsonSerializer.Serialize(request);
+        var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/mcp") { Content = content };
+        httpRequest.Headers.Add("Accept", "application/json, text/event-stream");
+
+        using var response = await _httpClient!.SendAsync(httpRequest, HttpCompletionOption.ResponseContentRead);
+        response.EnsureSuccessStatusCode();
+
+        var responseBody = await response.Content.ReadAsStringAsync();
+        var contentType = response.Content.Headers.ContentType?.MediaType ?? "";
+
+        if (contentType.Contains("text/event-stream", StringComparison.OrdinalIgnoreCase))
+        {
+            foreach (var line in responseBody.Split('\n'))
+            {
+                if (line.StartsWith("data: ", StringComparison.OrdinalIgnoreCase))
+                {
+                    var dataJson = line["data: ".Length..];
+                    using var doc = JsonDocument.Parse(dataJson);
+                    return doc.RootElement.Clone();
+                }
+            }
+
+            throw new InvalidOperationException($"No data line found in SSE response: {responseBody}");
+        }
+
+        using var jsonDoc = JsonDocument.Parse(responseBody);
+        return jsonDoc.RootElement.Clone();
     }
 
     public async Task DisposeAsync()
     {
-        if (_mcpClient is not null)
-        {
-            await _mcpClient.DisposeAsync();
-        }
         _httpClient?.Dispose();
-        if (_factory is not null)
+        if (_gatewayApp is not null)
         {
-            await _factory.DisposeAsync();
+            await _gatewayApp.StopAsync();
+            await _gatewayApp.DisposeAsync();
         }
         if (_container is not null)
         {
             await _container.DisposeAsync();
-        }
-    }
-
-    private sealed class GatewayWebApplicationFactory : WebApplicationFactory<Program>
-    {
-        private readonly CapturingAuditSink _auditSink;
-        private readonly string _downstreamBaseUrl;
-
-        public GatewayWebApplicationFactory(CapturingAuditSink auditSink, string downstreamBaseUrl)
-        {
-            _auditSink = auditSink;
-            _downstreamBaseUrl = downstreamBaseUrl;
-        }
-
-        protected override void ConfigureWebHost(IWebHostBuilder builder)
-        {
-            builder.ConfigureServices(services =>
-            {
-                var downstreamUrl = new Uri(_downstreamBaseUrl);
-
-                var testTools = new List<ToolRegistration>
-                {
-                    new("echo", "Echoes the input message", downstreamUrl, Allowed: true, Visible: true),
-                    new("add", "Adds two integers", downstreamUrl, Allowed: true, Visible: true),
-                    new("dangerous", "A hidden, disallowed tool", downstreamUrl, Allowed: false, Visible: false),
-                };
-
-                ReplaceSingleton<IToolRegistry>(services, new TestToolRegistry(testTools));
-                ReplaceSingleton<IAuditSink>(services, _auditSink);
-            });
-        }
-
-        private static void ReplaceSingleton<TInterface>(IServiceCollection services, TInterface instance)
-            where TInterface : class
-        {
-            var descriptor = services.FirstOrDefault(d => d.ServiceType == typeof(TInterface));
-            if (descriptor is not null)
-            {
-                services.Remove(descriptor);
-            }
-            services.AddSingleton(instance);
         }
     }
 }

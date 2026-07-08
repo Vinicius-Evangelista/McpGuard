@@ -28,11 +28,10 @@ preferences. Append-only per section; date each entry.
 - **Testing conventions (binding for all milestones):**
   - No mocking libraries (no Moq, no NSubstitute). Use hand-written **fakes** + **Object
     Mother** pattern.
-  - Test names: simplest descriptive sentence, first letter uppercase, snake_case, no
-    `Should_`/`Returns` verbs. Examples:
-    `Initialize_negotiates_protocol_and_returns_session_id`,
-    `Tools_list_returns_only_approved_tools`,
-    `Route_call_on_invisible_tool_never_invokes_downstream`.
+  - Test names: simplest descriptive sentence, first letter uppercase, snake*case, no
+    `Should*`/`Returns`verbs. Examples:`Initialize_negotiates_protocol_and_returns_session_id`,
+`Tools_list_returns_only_approved_tools`,
+`Route_call_on_invisible_tool_never_invokes_downstream`.
   - Unit tests are in-process, no network, no Docker.
   - Integration tests use **Testcontainers** to run the real sample downstream server as a
     container, plus `WebApplicationFactory<Program>` to host the gateway in-process.
@@ -66,12 +65,17 @@ _(none yet)_
 ## Todos
 
 - [x] When M1 code lands, update `AGENTS.md` testing section to match the snake_case +
-  no-mocks + Testcontainers conventions recorded under Decisions. — **Done 2026-07-03.**
-- [ ] Fix the solution-level `dotnet build McpGuard.slnx` failure (currently documented
-  in AGENTS.md as failing during restore with no diagnostics) or update AGENTS.md to
-  reflect the resolved state.
-- [ ] Run integration tests (Task 6) when Docker is available — tests build but require
-  Docker to execute.
+      no-mocks + Testcontainers conventions recorded under Decisions. — **Done 2026-07-03.**
+- [x] Fix the solution-level `dotnet build McpGuard.slnx` failure (currently documented
+      in AGENTS.md as failing during restore with no diagnostics) or update AGENTS.md to
+      reflect the resolved state. — **Done 2026-07-03.** `dotnet build McpGuard.slnx` now
+      succeeds (25 projects, 0 errors).
+- [x] Run integration tests (Task 6) when Docker is available — tests build but require
+      Docker to execute. — **Done 2026-07-03.** All 7 integration tests pass with Docker
+      (Docker Engine installed in WSL2 Ubuntu). Required Testcontainers 4.x API fix
+      (`WithDockerfileDirectory` + `WithContextDirectory`), MCP SDK stateless mode for
+      test compatibility, and real Kestrel server (not `WebApplicationFactory`) for SSE
+      response handling.
 - [ ] Run spec-driven-eval against M1 spec to grade completion.
 
 ## Lessons
@@ -90,6 +94,21 @@ _(none yet)_
   The constructor takes `HttpClientTransportOptions` with an `Endpoint` property of type `Uri`.
 - **2026-07-03** — Top-level `Program.cs` generates an internal `Program` class. Tests using
   `WebApplicationFactory<Program>` need a `public partial class Program {}` in a separate file.
+- **2026-07-03** — `WebApplicationFactory.CreateClient()` uses an in-memory `TestServer` handler
+  that cannot handle MCP's SSE streaming (the SDK keeps the stream open for notifications,
+  causing `ReadAsStringAsync()` to hang). Solution: use a real `WebApplication` with Kestrel on
+  a real port (`http://127.0.0.1:5099`) and raw `HttpClient` JSON-RPC calls instead.
+- **2026-07-03** — MCP SDK `McpClient.CreateAsync` has the same SSE deadlock issue in tests.
+  Use raw JSON-RPC over `HttpClient` for test assertions. Parse SSE format:
+  `event: message\ndata: {...json...}\n\n`.
+- **2026-07-03** — Testcontainers 4.x API changes: `IContainer` → `IContainer`, but
+  `FutureDockerImage` now requires `CreateAsync()` before `StartAsync()`. Dockerfile path
+  resolution uses `WithContextDirectory(repoRoot)` + `WithDockerfileDirectory(".")`.
+- **2026-07-03** — MCP SDK `CallToolResult.IsError` is optional — when a tool succeeds, the
+  `isError` property may be absent from the JSON. Test assertions must use
+  `TryGetProperty("isError", ...)` instead of `GetProperty("isError")`.
+- **2026-07-03** — `ToolRegistryOptions.Tools` is `init`-only. Integration test fixture uses
+  `TestToolRegistry` directly instead of `Configure<ToolRegistryOptions>`.
 
 ## Session log
 
