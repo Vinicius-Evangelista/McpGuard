@@ -53,12 +53,14 @@ public sealed class IntegrationTestFixture : IAsyncLifetime
         {
             new("echo", "Echoes the input message", downstreamUrl, Allowed: true, Visible: true),
             new("add", "Adds two integers", downstreamUrl, Allowed: true, Visible: true),
+            new("secret", "An allowed but invisible tool", downstreamUrl, Allowed: true, Visible: false),
             new("dangerous", "A hidden, disallowed tool", downstreamUrl, Allowed: false, Visible: false),
         };
 
-        Environment.SetEnvironmentVariable("McpGuard__Stateless", "true");
-
-        var builder = WebApplication.CreateBuilder();
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            EnvironmentName = "Testing"
+        });
         Console.WriteLine("[FIXTURE] WebApplicationBuilder created, configuring...");
         builder.WebHost.UseUrls("http://127.0.0.1:5099");
 
@@ -69,7 +71,10 @@ public sealed class IntegrationTestFixture : IAsyncLifetime
         builder.Services.AddSingleton<IMcpGatewayHandler, McpGatewayHandler>();
 
         builder.Services.AddMcpServer()
-            .WithHttpTransport(options => { options.Stateless = true; })
+            .WithHttpTransport(options =>
+            {
+                options.Stateless = builder.Configuration.GetValue<bool>("McpGuard:Stateless");
+            })
             .WithListToolsHandler((ctx, ct) => ctx.Services!.GetRequiredService<IMcpGatewayHandler>().ListToolsAsync(ctx, ct))
             .WithCallToolHandler((ctx, ct) => ctx.Services!.GetRequiredService<IMcpGatewayHandler>().CallToolAsync(ctx, ct));
 

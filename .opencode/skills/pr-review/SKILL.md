@@ -72,19 +72,15 @@ Record the diff surface; it is the primary search scope for all evidence later.
 
 ### Step 2 — Protected paths gate (deterministic, cheap)
 
-Run the skill's script against the diff surface:
+Apply this gate inline against the diff surface (`diff-surface.txt`) — no script needed. Scan each path against the protected-paths rules below and collect violations.
 
-```bash
-bash .opencode/skills/pr-review/scripts/check_protected_paths.sh < diff-surface.txt > gates.json
-```
-
-It exits 1 if any file violates the protected-paths policy. If it exits 1, parse `gates.json` and emit `verdict: blocked` with the violations. Do not run the remaining steps — a blocked PR does not get a spec review.
-
-Protected paths (enforced by the script):
+Protected paths (flag any matching diff path):
 - `*/bin/*` and `*/obj/*` — generated .NET build output.
-- `.env*` — secrets, never committed.
-- `appsettings.Production.json` and non-development `appsettings.*.json` overrides — real-secrets configs (local dev defaults like `appsettings.Development.json` are allowed).
+- `.env*` — secrets, never committed (covers `.env`, `.env.local`, `.env.production`, ...).
+- `appsettings.Production.json` and non-development `appsettings.*.json` overrides — real-secrets configs. `appsettings.json` (base) and `appsettings.Development.json` are allowed; any other `appsettings.<Env>.json` is flagged.
 - `Directory.Packages.props` — central NuGet versions; a change here without a paired source change in the same diff is flagged.
+
+If any path matches, emit `verdict: blocked` with the violations in `gates.violations` and do not run the remaining steps — a blocked PR does not get a spec review. Otherwise `gates.protected_paths = "pass"` and continue.
 
 ### Step 3 — Match the PR to a feature spec
 

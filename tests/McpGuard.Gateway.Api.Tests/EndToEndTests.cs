@@ -205,7 +205,7 @@ public sealed class End_to_end : IClassFixture<IntegrationTestFixture>
             method = "tools/call",
             @params = new
             {
-                name = "dangerous",
+                name = "secret",
                 arguments = new Dictionary<string, object?>()
             }
         });
