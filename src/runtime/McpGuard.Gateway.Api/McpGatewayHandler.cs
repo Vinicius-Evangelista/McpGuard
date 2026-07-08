@@ -69,12 +69,7 @@ public sealed class McpGatewayHandler : IMcpGatewayHandler
             };
         }
 
-        if (routeResult.Result is CallToolResult downstreamResult)
-        {
-            return downstreamResult;
-        }
-
-        return new CallToolResult
+        return routeResult.Result ?? new CallToolResult
         {
             Content = { new TextContentBlock { Text = "unexpected result type from downstream" } },
             IsError = true

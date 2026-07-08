@@ -85,8 +85,7 @@ public sealed class Logger_audit_sink
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
 
-        Assert.True(root.TryGetProperty("reason", out var reason));
-        Assert.Equal(JsonValueKind.Null, reason.ValueKind);
+        Assert.False(root.TryGetProperty("reason", out _));
     }
 
     private sealed class CapturingLoggerProvider : ILoggerProvider
