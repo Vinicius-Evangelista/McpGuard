@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ModelContextProtocol.Protocol;
 
 namespace McpGuard.ToolRouter;
 
@@ -9,5 +10,5 @@ public interface IMcpClientFactory
 
 public interface IMcpDownstreamClient : IAsyncDisposable
 {
-    Task<object> CallToolAsync(string toolName, JsonElement arguments, CancellationToken ct);
+    Task<CallToolResult> CallToolAsync(string toolName, JsonElement arguments, CancellationToken ct);
 }

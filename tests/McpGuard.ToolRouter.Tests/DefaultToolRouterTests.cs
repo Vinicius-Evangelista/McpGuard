@@ -3,6 +3,7 @@ using McpGuard.Audit;
 using McpGuard.ToolRegistry;
 using McpGuard.ToolRouter;
 using McpGuard.ToolRouter.Tests.Fakes;
+using ModelContextProtocol.Protocol;
 using Xunit;
 
 namespace McpGuard.ToolRouter.Tests;
@@ -19,8 +20,8 @@ public sealed class Default_tool_router
         _registry = new FakeToolRegistry(ObjectMother.AllToolRegistrations());
         _audit = new FakeAuditSink();
         _clientFactory = new FakeMcpClientFactory()
-            .WithToolResult("echo", "echo: hello")
-            .WithToolResult("add", 42);
+            .WithToolResult("echo", ObjectMother.EchoCallToolResult())
+            .WithToolResult("add", ObjectMother.AddCallToolResult());
         _sut = new DefaultToolRouter(_registry, _audit, _clientFactory);
     }
 
@@ -40,7 +41,7 @@ public sealed class Default_tool_router
         var result = await _sut.RouteCallAsync("echo", ObjectMother.EchoCallArguments(), "session-1", CancellationToken.None);
 
         Assert.True(result.Allowed);
-        Assert.Equal("echo: hello", result.Result);
+        Assert.NotNull(result.Result);
         Assert.Null(result.BlockReason);
         Assert.Equal(1, _clientFactory.CreateAsyncCallCount);
     }

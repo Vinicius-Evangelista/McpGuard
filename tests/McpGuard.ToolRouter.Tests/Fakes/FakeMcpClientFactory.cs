@@ -1,13 +1,15 @@
 using System.Text.Json;
+using McpGuard.ToolRouter;
+using ModelContextProtocol.Protocol;
 
 namespace McpGuard.ToolRouter.Tests.Fakes;
 
 public sealed class FakeMcpClientFactory : IMcpClientFactory
 {
     public int CreateAsyncCallCount { get; private set; }
-    private readonly Dictionary<string, object> _resultsByTool = [];
+    private readonly Dictionary<string, CallToolResult> _resultsByTool = [];
 
-    public FakeMcpClientFactory WithToolResult(string toolName, object result)
+    public FakeMcpClientFactory WithToolResult(string toolName, CallToolResult result)
     {
         _resultsByTool[toolName] = result;
         return this;
@@ -22,14 +24,14 @@ public sealed class FakeMcpClientFactory : IMcpClientFactory
 
 public sealed class FakeMcpDownstreamClient : IMcpDownstreamClient
 {
-    private readonly Dictionary<string, object> _resultsByTool;
+    private readonly Dictionary<string, CallToolResult> _resultsByTool;
 
     public int CallCount { get; private set; }
 
-    public FakeMcpDownstreamClient(Dictionary<string, object> resultsByTool) =>
+    public FakeMcpDownstreamClient(Dictionary<string, CallToolResult> resultsByTool) =>
         _resultsByTool = resultsByTool;
 
-    public Task<object> CallToolAsync(string toolName, JsonElement arguments, CancellationToken ct)
+    public Task<CallToolResult> CallToolAsync(string toolName, JsonElement arguments, CancellationToken ct)
     {
         CallCount++;
         if (!_resultsByTool.TryGetValue(toolName, out var result))

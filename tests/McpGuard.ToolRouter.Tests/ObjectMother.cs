@@ -2,6 +2,7 @@ using System.Text.Json;
 using McpGuard.Audit;
 using McpGuard.ToolRegistry;
 using McpGuard.ToolRouter;
+using ModelContextProtocol.Protocol;
 
 namespace McpGuard.ToolRouter.Tests;
 
@@ -44,7 +45,17 @@ public sealed class ObjectMother
         return JsonDocument.Parse(json).RootElement.Clone();
     }
 
-    public static RouteResult AllowedRouteResult() => new(true, "echo: hello", null);
+    public static CallToolResult EchoCallToolResult() => new()
+    {
+        Content = { new TextContentBlock { Text = "echo: hello" } }
+    };
+
+    public static CallToolResult AddCallToolResult() => new()
+    {
+        Content = { new TextContentBlock { Text = "42" } }
+    };
+
+    public static RouteResult AllowedRouteResult() => new(true, EchoCallToolResult(), null);
 
     public static RouteResult BlockedRouteResult() => new(false, null, "tool 'dangerous' is not approved for execution");
 }

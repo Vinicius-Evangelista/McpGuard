@@ -10,7 +10,7 @@ using ModelContextProtocol.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<ToolRegistryOptions>(
-    builder.Configuration.GetSection("McpGuard:Tools"));
+    builder.Configuration.GetSection("McpGuard"));
 
 builder.Services.AddSingleton<IToolRegistry, ConfigToolRegistry>();
 builder.Services.AddSingleton<IAuditSink, LoggerAuditSink>();

@@ -56,7 +56,7 @@ dotnet test tests/McpGuard.Gateway.Api.Tests
 ```bash
 docker build -t mcpguard-sample-tools \
   -f src/runtime/McpGuard.SampleTools.Server/Dockerfile \
-  src/runtime/McpGuard.SampleTools.Server
+  .
 ```
 
 ## Architecture

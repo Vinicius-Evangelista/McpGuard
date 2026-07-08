@@ -14,7 +14,7 @@ public sealed class SdkMcpDownstreamClient : IMcpDownstreamClient
         _client = client;
     }
 
-    public async Task<object> CallToolAsync(string toolName, JsonElement arguments, CancellationToken ct)
+    public async Task<CallToolResult> CallToolAsync(string toolName, JsonElement arguments, CancellationToken ct)
     {
         var args = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(arguments)
             ?? new Dictionary<string, JsonElement>();
@@ -25,8 +25,7 @@ public sealed class SdkMcpDownstreamClient : IMcpDownstreamClient
             Arguments = args
         };
 
-        var result = await _client.CallToolAsync(requestParams, ct);
-        return result;
+        return await _client.CallToolAsync(requestParams, ct);
     }
 
     public ValueTask DisposeAsync()
