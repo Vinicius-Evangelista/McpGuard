@@ -2,14 +2,15 @@ using System.Text.Json;
 using McpGuard.ToolRouter;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
+using McpClientInstance = ModelContextProtocol.Client.McpClient;
 
-namespace McpGuard.Gateway.Api;
+namespace McpGuard.McpClient.Sdk;
 
 public sealed class SdkMcpDownstreamClient : IMcpDownstreamClient
 {
-    private readonly McpClient _client;
+    private readonly McpClientInstance _client;
 
-    public SdkMcpDownstreamClient(McpClient client)
+    public SdkMcpDownstreamClient(McpClientInstance client)
     {
         _client = client;
     }

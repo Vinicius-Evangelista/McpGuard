@@ -1,9 +1,10 @@
 using McpGuard.ToolRouter;
+using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
-using Microsoft.Extensions.Logging;
+using McpClientInstance = ModelContextProtocol.Client.McpClient;
 
-namespace McpGuard.Gateway.Api;
+namespace McpGuard.McpClient.Sdk;
 
 public sealed class SdkMcpClientFactory : IMcpClientFactory
 {
@@ -29,7 +30,7 @@ public sealed class SdkMcpClientFactory : IMcpClientFactory
             ClientInfo = new Implementation { Name = "McpGuard", Version = "1.0.0" }
         };
 
-        var client = await McpClient.CreateAsync(transport, clientOptions, _loggerFactory, ct);
+        var client = await McpClientInstance.CreateAsync(transport, clientOptions, _loggerFactory, ct);
         _logger.LogInformation("Created MCP client for {DownstreamUrl}", downstreamUrl);
 
         return new SdkMcpDownstreamClient(client);

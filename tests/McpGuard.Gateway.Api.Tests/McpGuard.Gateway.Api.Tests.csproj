@@ -21,6 +21,7 @@
     <ProjectReference Include="..\..\src\runtime\McpGuard.ToolRegistry\McpGuard.ToolRegistry.csproj" />
     <ProjectReference Include="..\..\src\runtime\McpGuard.ToolRouter\McpGuard.ToolRouter.csproj" />
     <ProjectReference Include="..\..\src\runtime\McpGuard.Audit\McpGuard.Audit.csproj" />
+    <ProjectReference Include="..\..\src\runtime\McpGuard.McpClient.Sdk\McpGuard.McpClient.Sdk.csproj" />
   </ItemGroup>
 
 </Project>

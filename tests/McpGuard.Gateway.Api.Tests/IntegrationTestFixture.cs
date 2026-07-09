@@ -5,6 +5,7 @@ using DotNet.Testcontainers.Containers;
 using McpGuard.Audit;
 using McpGuard.Gateway.Api;
 using McpGuard.Gateway.Api.Tests.Fakes;
+using McpGuard.McpClient.Sdk;
 using McpGuard.ToolRegistry;
 using McpGuard.ToolRouter;
 using Microsoft.AspNetCore.Builder;
