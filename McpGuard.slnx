@@ -16,6 +16,7 @@
     <Project Path="src/runtime/McpGuard.Auth/McpGuard.Auth.csproj" />
     <Project Path="src/runtime/McpGuard.DlpContext/McpGuard.DlpContext.csproj" />
     <Project Path="src/runtime/McpGuard.Gateway.Api/McpGuard.Gateway.Api.csproj" />
+    <Project Path="src/runtime/McpGuard.McpClient.Sdk/McpGuard.McpClient.Sdk.csproj" />
     <Project Path="src/runtime/McpGuard.Observability/McpGuard.Observability.csproj" />
     <Project Path="src/runtime/McpGuard.Policy/McpGuard.Policy.csproj" />
     <Project Path="src/runtime/McpGuard.Redaction/McpGuard.Redaction.csproj" />

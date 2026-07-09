@@ -1,5 +1,6 @@
 using McpGuard.Audit;
 using McpGuard.Gateway.Api;
+using McpGuard.McpClient.Sdk;
 using McpGuard.ToolRegistry;
 using McpGuard.ToolRouter;
 using Microsoft.AspNetCore.Builder;
