@@ -9,7 +9,7 @@ Legend: status `[ ]` pending, `[~]` in progress, `[x]` done, `[!]` blocked.
 
 ## Task 1 — Wire packages + project references + sample server scaffold
 
-**Status:** `[ ]`
+**Status:** `[x]`
 
 **What:**
 - Add package versions to `Directory.Packages.props`: `ModelContextProtocol`,
@@ -60,7 +60,7 @@ each command + exit code.
 
 ## Task 2 — `[P]` ToolRegistry: model + ConfigToolRegistry + options
 
-**Status:** `[ ]`
+**Status:** `[x]`
 
 **What:** Implement the `McpGuard.ToolRegistry` project per `design.md`:
 - `ToolRegistration` record.
@@ -93,7 +93,7 @@ exits 0 with all four tests passing.
 
 ## Task 3 — `[P]` Audit: IAuditSink + LoggerAuditSink + AuditEvent
 
-**Status:** `[ ]`
+**Status:** `[x]`
 
 **What:** Implement the `McpGuard.Audit` project per `design.md`:
 - `AuditEvent` record (Timestamp, SessionId, Method, ToolName, Outcome, Reason).
@@ -126,7 +126,7 @@ with all four tests passing.
 
 ## Task 4 — ToolRouter: IToolRouter + DefaultToolRouter + IMcpClientFactory
 
-**Status:** `[ ]`
+**Status:** `[x]`
 
 **What:** Implement the `McpGuard.ToolRouter` project per `design.md`:
 - `RouteResult` record.
@@ -165,7 +165,7 @@ exits 0 with all eight tests passing.
 
 ## Task 5 — Gateway.Api: Program.cs wiring + MCP handlers + sample server tool handlers
 
-**Status:** `[ ]`
+**Status:** `[x]`
 
 **What:**
 - `src/runtime/McpGuard.Gateway.Api/Program.cs` — full DI wiring per `design.md`:
@@ -209,7 +209,7 @@ exits 0 with all eight tests passing.
 
 ## Task 6 — Integration tests: Testcontainers + WebApplicationFactory end-to-end
 
-**Status:** `[ ]`
+**Status:** `[x]`
 
 **What:** Implement `tests/McpGuard.Gateway.Api.Tests/`:
 - `WebApplicationFactory<Program>` to host the gateway in-process on plain HTTP.
@@ -251,7 +251,7 @@ reports `Blocked` with the Docker error and the orchestrator arranges a re-run.
 
 ## Task 7 — Docs + STATE update
 
-**Status:** `[ ]`
+**Status:** `[x]`
 
 **What:**
 - Update `README.md` with: project blurb, run commands (`dotnet run` for gateway + sample
