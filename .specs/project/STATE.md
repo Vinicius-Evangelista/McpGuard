@@ -76,7 +76,39 @@ _(none yet)_
       (`WithDockerfileDirectory` + `WithContextDirectory`), MCP SDK stateless mode for
       test compatibility, and real Kestrel server (not `WebApplicationFactory`) for SSE
       response handling.
-- [ ] Run spec-driven-eval against M1 spec to grade completion.
+- [x] Run spec-driven-eval against M1 spec to grade completion. — **Done 2026-07-09.**
+      Final **0.9952 (Spec-complete, band ≥ 0.90)**. Report:
+      `.specs/features/m1-mvp-tool-gateway/evaluations/p0-m1-mvp-tool-gateway-20260709T004017Z.md`.
+      Frozen AC baseline:
+      `.specs/features/m1-mvp-tool-gateway/evaluations/_ac-baseline.md`. Single UNMET
+      check: M1-R7 T-8 (e2e does not assert the `initialize:initialized` audit event, and
+      the `IntegrationTestFixture` does not register `ISessionMigrationHandler` that emits
+      it). One design-vs-impl delta: M1-R6 specifies a raw `-32602` JSON-RPC envelope, but
+      the implementation uses `CallToolResult { IsError = true }` (the SDK's tool-call
+      error contract). 60/60 I-checks MET; 31/32 T-checks MET.
+- [ ] **M1 follow-up (closes the only UNMET test check):** register
+      `ISessionMigrationHandler` in `IntegrationTestFixture.cs` (mirror `Program.cs:20`)
+      and assert `initialize:initialized` in
+      `Audit_emits_initialized_listed_allowed_and_blocked_events_in_order`; tighten the
+      `>= 4` tolerance to an exact count or assert all 4 outcomes. Lifts M1-R7 `T` to 1.00
+      and `Final` to 1.00. _(recorded 2026-07-09 from the eval)_
+- [ ] **M1 follow-up (design-vs-impl delta):** reconcile the `-32602` envelope clause in
+      `spec.md:22` + `design.md:232-250` with the implemented `isError` shape — either
+      canonicalize `isError` in the spec (lower risk, matches the SDK contract) or throw
+      a `-32602` JSON-RPC error from `McpGatewayHandler.CallToolAsync`. _(recorded
+      2026-07-09 from the eval)_
+- [ ] **Deferred (not M1, follow-up for M2/M3):** address the downstream-unreachable
+      failure path in `DefaultToolRouter.RouteCallAsync` — catch SDK exceptions, emit a
+      `tools.call.blocked` audit event with a downstream-unreachable reason, return a
+      clear error. `E_recall` category-9 miss surfaced by the eval. _(recorded
+      2026-07-09)_
+- [ ] Cosmetic: remove the duplicate `UseHttpsRedirection` + `MapMcp("/mcp")` block in
+      `Program.cs:39-44`. _(recorded 2026-07-09 from the eval)_
+- [ ] Start M2 spec (Specify phase) under `.specs/features/m2-.../` — OIDC bearer auth
+      on `initialize`, Admin API CRUD for ServerRegistry/CapabilityCatalog/PolicyStore,
+      store-backed `IToolRegistry`, per-tenant allowlist scoping. M1 is graded
+      Spec-complete; M2 can begin once the M1-R7 T-8 follow-up is closed. _(recorded
+      2026-07-09)_
 
 ## Lessons
 

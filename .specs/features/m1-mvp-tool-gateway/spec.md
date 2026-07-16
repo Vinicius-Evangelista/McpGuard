@@ -1,6 +1,11 @@
 # M1 — MVP Tool Gateway — Specification
 
-Status: **approved for implementation** (2026-07-03).
+Status: **complete** (2026-07-09). Implementation graded Spec-complete by spec-driven-eval
+(`Final = 0.9952`, band ≥ 0.90). See
+`evaluations/p0-m1-mvp-tool-gateway-20260709T004017Z.md` for the report and
+`evaluations/_ac-baseline.md` for the frozen checklist. One follow-up test check
+(M1-R7 T-8) and one design-vs-impl delta (`-32602` envelope) remain; both are recorded
+in `.specs/project/STATE.md`.
 Source PRD: M1 milestone in `.specs/project/ROADMAP.md` and the user's M1 brief.
 
 ## Goal
