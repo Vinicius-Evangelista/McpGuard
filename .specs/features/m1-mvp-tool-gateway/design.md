@@ -229,25 +229,34 @@ Console app (`Microsoft.NET.Sdk.Web` + `ModelContextProtocol.AspNetCore`):
   - `Testcontainers` (core, with `ImageFromDockerfile` to build the sample server image
     programmatically)
 
-## JSON-RPC error shape for blocked calls (M1-R6)
+## Blocked-call result shape (M1-R6)
 
-When `RouteCallAsync` returns `Allowed=false`, the gateway handler raises a JSON-RPC error:
+When `RouteCallAsync` returns `Allowed=false`, the gateway handler returns a
+`CallToolResult` with `IsError = true` and a `TextContentBlock` carrying the block reason:
 
 ```json
 {
   "jsonrpc": "2.0",
   "id": "<request id>",
-  "error": {
-    "code": -32602,
-    "message": "tool 'dangerous' is not approved for execution"
+  "result": {
+    "content": [
+      { "type": "text", "text": "tool 'dangerous' is not approved for execution" }
+    ],
+    "isError": true
   }
 }
 ```
 
-Code `-32602` (invalid params) is chosen because the client requested a tool that is not a
-valid callable target on this gateway. The message always names the tool and the reason. No
-downstream call is made for a blocked tool (asserted in unit tests via
-`FakeMcpClientFactory`).
+This is the MCP SDK's tool-call error contract: the handler returns a `CallToolResult`, and
+the SDK serializes it (including `isError: true`) rather than emitting a raw JSON-RPC error
+envelope. The message always names the tool and the reason. No downstream call is made for a
+blocked tool (asserted in unit tests via `FakeMcpClientFactory`).
+
+> **Reconciled 2026-07-16 (M2 T2).** An earlier draft of this section specified a raw
+> `-32602` (invalid params) JSON-RPC error envelope. The implementation uses the SDK's
+> `isError` result path instead, which is how the MCP SDK surfaces tool-call errors when a
+> handler returns a `CallToolResult`. The `isError` shape is canonical for M1; the
+> `-32602` envelope clause has been removed from the spec and this design.
 
 ## Integration test architecture (M1-R9)
 
@@ -266,8 +275,8 @@ downstream call is made for a blocked tool (asserted in unit tests via
           tools/list
           tools/call echo
           tools/call add
-          tools/call dangerous   (expect -32602)
-          tools/call <invisible> (expect -32602)
+           tools/call dangerous   (expect isError result)
+           tools/call <invisible> (expect isError result)
           assert audit events captured
 ```
 
@@ -284,7 +293,7 @@ order with the expected fields.
 | M1-R3 | `DefaultToolRouter.ListVisibleTools` + `tools/list` handler |
 | M1-R4 | `ToolRegistry` project (`ToolRegistration`, `IToolRegistry`, `ConfigToolRegistry`, `ToolRegistryOptions`, `ToolEntry`) |
 | M1-R5 | `DefaultToolRouter.RouteCallAsync` allowed branch + `IMcpClientFactory`/`IMcpDownstreamClient` SDK impl |
-| M1-R6 | `DefaultToolRouter.RouteCallAsync` blocked branch + gateway handler raising `-32602` |
+| M1-R6 | `DefaultToolRouter.RouteCallAsync` blocked branch + gateway handler returning `CallToolResult { IsError = true }` |
 | M1-R7 | `Audit` project (`AuditEvent`, `IAuditSink`, `LoggerAuditSink`) + handler call sites |
 | M1-R8 | `.csproj` `<ProjectReference>` wiring |
 | M1-R9 | `tests/` four projects |

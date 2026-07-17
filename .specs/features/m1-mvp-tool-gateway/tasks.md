@@ -226,8 +226,9 @@ exits 0 with all eight tests passing.
 - `Tools_list_returns_only_approved_tools` (echo + add present; dangerous absent)
 - `Tools_call_on_approved_echo_returns_downstream_result`
 - `Tools_call_on_approved_add_returns_downstream_result`
-- `Tools_call_on_disallowed_tool_is_blocked_with_jsonrpc_error` (assert error code `-32602`
-  and that the message names `dangerous`)
+- `Tools_call_on_disallowed_tool_is_blocked_with_jsonrpc_error` (assert `isError` result
+  and that the message names `dangerous`; reconciled 2026-07-16 by M2 T2 — the earlier
+  `-32602` envelope assertion was replaced by the SDK's `isError` shape)
 - `Tools_call_on_invisible_tool_is_blocked_with_jsonrpc_error`
 - `Audit_emits_initialized_listed_allowed_and_blocked_events_in_order` (via
   `CapturingAuditSink`)

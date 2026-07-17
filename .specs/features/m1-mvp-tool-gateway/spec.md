@@ -4,8 +4,9 @@ Status: **complete** (2026-07-09). Implementation graded Spec-complete by spec-d
 (`Final = 0.9952`, band ≥ 0.90). See
 `evaluations/p0-m1-mvp-tool-gateway-20260709T004017Z.md` for the report and
 `evaluations/_ac-baseline.md` for the frozen checklist. One follow-up test check
-(M1-R7 T-8) and one design-vs-impl delta (`-32602` envelope) remain; both are recorded
-in `.specs/project/STATE.md`.
+(M1-R7 T-8) was closed by M2 (T1, 2026-07-16); the design-vs-impl delta on the blocked-call
+error shape was reconciled by canonicalizing the `isError` shape (M2 T2, 2026-07-16). Both
+are recorded in `.specs/project/STATE.md`.
 Source PRD: M1 milestone in `.specs/project/ROADMAP.md` and the user's M1 brief.
 
 ## Goal
@@ -24,7 +25,7 @@ JSON-RPC error, and have every decision audited.
 | M1-R3 | `tools/list` returns only tools present in the configured allowlist. Each returned tool carries name, description, and input schema from the registered downstream tool. | "A client can list tools and only receive approved tools" |
 | M1-R4 | A `ToolRegistry` model holds the mapping of approved tool name → downstream server URL + tool descriptor + `Allowed` + `Visible` flags. Source for M1: the `McpGuard:Tools` config section in `appsettings.json`, bound via `IOptions<ToolRegistryOptions>` and surfaced through `IToolRegistry`. | "Tool registry model" + "Tool allowlist" |
 | M1-R5 | `tools/call` for an approved tool: the gateway routes the call to the mapped downstream MCP server via an MCP client, and returns the downstream result to the client. | "A client can call an approved tool and receive the downstream result" |
-| M1-R6 | `tools/call` for a tool NOT in the allowlist, OR a tool in the registry but marked `Allowed=false` or `Visible=false`, is blocked with a clear JSON-RPC error. No downstream call is made. The error uses JSON-RPC code `-32602` (invalid params) with a message naming the tool and the block reason. | "A direct call to a disallowed tool is blocked with a clear JSON-RPC error" |
+| M1-R6 | `tools/call` for a tool NOT in the allowlist, OR a tool in the registry but marked `Allowed=false` or `Visible=false`, is blocked with a clear JSON-RPC error. No downstream call is made. The blocked result uses the SDK's `CallToolResult { IsError = true }` shape with a `TextContentBlock` message naming the tool and the block reason. (Reconciled 2026-07-16 by M2 T2: the earlier `-32602` envelope clause was dropped in favor of the `isError` shape, which matches the MCP SDK's tool-call error contract.) | "A direct call to a disallowed tool is blocked with a clear JSON-RPC error" |
 | M1-R7 | An `IAuditSink` emits one structured JSON line per event to `ILogger`. Event types: `initialize` → outcome `initialized`; `tools/list` → outcome `tools.listed`; allowed `tools/call` → outcome `tools.call.allowed`; blocked `tools/call` → outcome `tools.call.blocked`. Each line includes timestamp, session id, method, tool name (when applicable), outcome, and reason (when blocked). | "Basic audit output exists for allowed and blocked paths" |
 | M1-R8 | `Gateway.Api` references `ToolRegistry`, `ToolRouter`, and `Audit`. `ToolRouter` references `ToolRegistry` and `Audit`. The runtime slice in use is wired; empty-stub projects (`Auth`, `DlpContext`, `Redaction`, `Secrets`, `Policy`, `Observability`) are NOT referenced by the gateway in M1. | architecture hygiene |
 | M1-R9 | xUnit test projects cover: `ConfigToolRegistry` allowlist behavior, `DefaultToolRouter` allowed/blocked routing (with fakes), `LoggerAuditSink` output shape, and an end-to-end integration test driving a real containerized sample MCP server through the gateway via Testcontainers + `WebApplicationFactory<Program>`. Tests follow the conventions in `.specs/codebase/TESTING.md` (no mocks; fakes + Object Mother; snake_case names). | validates R1–R7 |
