@@ -7,7 +7,7 @@ task each and report back.
 Legend: status `[ ]` pending, `[~]` in progress, `[x]` done, `[!]` blocked.
 
 **Design:** `.specs/features/m2-admin-tool-registry/design.md`
-**Status:** Draft
+**Status:** Complete — T1-T18 done; full gate green (`dotnet build McpGuard.slnx` + `dotnet test McpGuard.slnx` = 63 tests pass).
 
 ---
 
@@ -386,7 +386,7 @@ extension method grouping the routes.
 
 ---
 
-### T12: Add resync + capability PATCH + capability GET endpoints to Admin.Api
+### T12: Add resync + capability PATCH + capability GET endpoints to Admin.Api [x]
 
 **What:** Add `POST /servers/{id}/resync`, `PATCH /capabilities/{id}`, `GET /capabilities`,
 `GET /capabilities/{id}`, `GET /servers/{id}/capabilities` to `AdminEndpoints.cs`. Resync
@@ -399,10 +399,10 @@ updates `SyncedAt`. PATCH updates `Allowed`/`Visible`. 404 on unknown ids.
 **Requirement:** M2-R9, M2-R10, M2-R11, M2-R12, M2-R15, M2-R27, M2-R28, M2-R29
 **Tools:** MCP: none. Skill: none.
 **Done when:**
-- [ ] `POST /servers/{id}/resync` re-discovers, replaces capabilities, updates synced-at; 404 on unknown server
-- [ ] `PATCH /capabilities/{id}` updates `Allowed`/`Visible`; 404 on unknown capability
-- [ ] `GET /capabilities`, `GET /capabilities/{id}`, `GET /servers/{id}/capabilities` all work
-- [ ] Tests added to `tests/McpGuard.Admin.Api.Tests/`:
+- [x] `POST /servers/{id}/resync` re-discovers, replaces capabilities, updates synced-at; 404 on unknown server
+- [x] `PATCH /capabilities/{id}` updates `Allowed`/`Visible`; 404 on unknown capability
+- [x] `GET /capabilities`, `GET /capabilities/{id}`, `GET /servers/{id}/capabilities` all work
+- [x] Tests added to `tests/McpGuard.Admin.Api.Tests/`:
   `Resync_server_replaces_capabilities_and_updates_synced_at`,
   `Resync_unknown_server_returns_404`,
   `Patch_capability_visibility_reflects_in_next_query`,
@@ -411,8 +411,8 @@ updates `SyncedAt`. PATCH updates `Allowed`/`Visible`. 404 on unknown ids.
   `Get_capabilities_returns_all`,
   `Get_capability_by_id_returns_404_for_unknown`,
   `Get_server_capabilities_returns_only_that_server`
-- [ ] Gate passes: `dotnet test tests/McpGuard.Admin.Api.Tests` (≥8 new + 7 existing = ≥15 tests)
-- [ ] Test count: ≥15 tests pass (no silent deletions)
+- [x] Gate passes: `dotnet test tests/McpGuard.Admin.Api.Tests` (18 tests pass, ≥15 expected)
+- [x] Test count: 18 tests pass (no silent deletions)
 **Tests:** integration
 **Gate:** full
 **Commit:** `feat(admin-api): add resync and capability allowlist/visibility endpoints`
@@ -543,7 +543,7 @@ to `appsettings.json` (default `./mcpguard.db`).
 
 ---
 
-### T17: End-to-end integration tests — Admin API + Gateway live-read + downstream-unreachable
+### T17: End-to-end integration tests — Admin API + Gateway live-read + downstream-unreachable [x]
 
 **What:** Add M2 integration tests to `tests/McpGuard.Gateway.Api.Tests/` (and possibly a new
 `tests/McpGuard.M2.Integration.Tests/` if cleaner). The tests start both apps (Admin API on a
@@ -562,23 +562,24 @@ extend with an Admin API `HttpClient` + a temp-file SQLite
 **Requirement:** M2-R1, M2-R7, M2-R11, M2-R12, M2-R13, M2-R14, M2-R20, M2-R24, M2-R25, M2-R26
 **Tools:** MCP: none. Skill: none.
 **Done when:**
-- [ ] New integration test project `tests/McpGuard.M2.Integration.Tests/` added to `McpGuard.slnx`
-- [ ] Tests use Testcontainers for the sample downstream, real Kestrel for both Admin API + Gateway, temp-file SQLite cleaned in `IAsyncLifetime.DisposeAsync`
-- [ ] Tests:
+- [x] New integration test project `tests/McpGuard.M2.Integration.Tests/` added to `McpGuard.slnx`
+- [x] Tests use Testcontainers for the sample downstream, real Kestrel for both Admin API + Gateway, temp-file SQLite cleaned in `IAsyncLifetime.DisposeAsync`
+- [x] Fixture exposes `ResetStateAsync()` to clear servers/capabilities + session + audit between tests so each test is isolated despite the shared SQLite file
+- [x] Tests:
   `Register_server_via_admin_api_then_gateway_tools_list_reflects_discovered_tools`,
   `Patch_capability_visible_false_drops_tool_from_gateway_tools_list_without_restart`,
   `Patch_capability_allowed_false_blocks_gateway_tools_call`,
   `Tools_call_on_unreachable_downstream_returns_isError_and_emits_downstream_unreachable_audit`,
   `Health_endpoint_reports_unreachable_server_as_unhealthy`
-- [ ] Gate passes: `dotnet test tests/McpGuard.M2.Integration.Tests` (requires Docker)
-- [ ] Test count: ≥5 new tests pass
+- [x] Gate passes: `dotnet test tests/McpGuard.M2.Integration.Tests` (requires Docker)
+- [x] Test count: 5 new tests pass (deterministic across repeated runs)
 **Tests:** integration
 **Gate:** full
 **Commit:** `test(m2): add end-to-end integration for admin registry, live read, and unreachable path`
 
 ---
 
-### T18: Full-solution build + test + refresh stale STRUCTURE.md
+### T18: Full-solution build + test + refresh stale STRUCTURE.md [x]
 
 **What:** Run the full gate: `dotnet build McpGuard.slnx` (all projects) and
 `dotnet test McpGuard.slnx` (unit + integration). Refresh the stale
@@ -590,11 +591,11 @@ to reflect the M1 + M2 wiring so future milestones plan against reality.
 **Requirement:** (cross-cutting hygiene)
 **Tools:** MCP: none. Skill: none.
 **Done when:**
-- [ ] `dotnet build McpGuard.slnx` exits 0 (all projects)
-- [ ] `dotnet test McpGuard.slnx` exits 0 (unit tests always; integration tests with Docker)
-- [ ] `.specs/codebase/STRUCTURE.md` reflects the M1 + M2 project reference graph (runtime + control-plane wiring)
-- [ ] Test count: full solution test run passes (sum of all unit + integration tests; no silent deletions)
-- [ ] Gate passes: `dotnet build McpGuard.slnx` + `dotnet test McpGuard.slnx`
+- [x] `dotnet build McpGuard.slnx` exits 0 (all 26 projects)
+- [x] `dotnet test McpGuard.slnx` exits 0 (unit tests always; integration tests with Docker) — 63 tests pass (5+4+11+5+4+4+7+18+5)
+- [x] `.specs/codebase/STRUCTURE.md` reflects the M1 + M2 project reference graph (runtime + control-plane wiring)
+- [x] Test count: full solution test run passes (sum of all unit + integration tests; no silent deletions)
+- [x] Gate passes: `dotnet build McpGuard.slnx` + `dotnet test McpGuard.slnx`
 **Tests:** all
 **Gate:** full
 **Commit:** `docs(codebase): refresh STRUCTURE.md to M1+M2 wiring`
