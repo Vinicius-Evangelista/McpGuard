@@ -236,12 +236,12 @@ class — find it), `tests/McpGuard.ToolRouter.Tests/Fakes/FakeMcpDownstreamClie
 **Requirement:** M2-R7 (enables capability discovery)
 **Tools:** MCP: none. Skill: none.
 **Done when:**
-- [ ] `IMcpDownstreamClient` has `ListToolsAsync` with the SDK's `ListToolsResult` return type
-- [ ] `SdkMcpDownstreamClient` passes through to the underlying `IMcpClient`
-- [ ] `FakeMcpDownstreamClient` has the new method (throws `NotImplementedException` by default — tests that need it override)
-- [ ] M1 `DefaultToolRouterTests` still pass: `dotnet test tests/McpGuard.ToolRouter.Tests` (8 tests)
-- [ ] Gate passes: `dotnet build src/runtime/McpGuard.ToolRouter/McpGuard.ToolRouter.csproj`
-- [ ] Test count: 8 tests pass (no silent deletions)
+- [x] `IMcpDownstreamClient` has `ListToolsAsync` with the SDK's `ListToolsResult` return type
+- [x] `SdkMcpDownstreamClient` passes through to the underlying `IMcpClient`
+- [x] `FakeMcpDownstreamClient` has the new method (throws `NotImplementedException` by default — tests that need it override)
+- [x] M1 `DefaultToolRouterTests` still pass: `dotnet test tests/McpGuard.ToolRouter.Tests` (8 tests)
+- [x] Gate passes: `dotnet build src/runtime/McpGuard.ToolRouter/McpGuard.ToolRouter.csproj`
+- [x] Test count: 8 tests pass (no silent deletions)
 **Tests:** unit (existing — must not regress)
 **Gate:** quick
 **Commit:** `feat(tool-router): widen IMcpDownstreamClient with ListToolsAsync`
@@ -263,18 +263,18 @@ including `ServerId`, `InputSchema` parsed from `InputSchemaJson`, `CapabilityId
 **Requirement:** M2-R17, M2-R20
 **Tools:** MCP: none. Skill: none.
 **Done when:**
-- [ ] `StoreToolRegistry` implements `IAsyncToolRegistry`
-- [ ] `GetAllAsync` returns capabilities from enabled servers, mapped to `ToolRegistration`
-- [ ] `GetAsync` returns the first matching capability by tool name, or null
-- [ ] No in-memory cache — every call opens a DbContext
-- [ ] New unit test project `tests/McpGuard.ServerRegistry.Tests/` created, references `McpGuard.ServerRegistry` + `Microsoft.EntityFrameworkCore.InMemory` (or SQLite temp file); tests use a hand-seeded `McpDbContext` (Object Mother pattern, no mocks)
-- [ ] Tests: `Store_tool_registry_returns_capabilities_from_enabled_servers`,
+- [x] `StoreToolRegistry` implements `IAsyncToolRegistry`
+- [x] `GetAllAsync` returns capabilities from enabled servers, mapped to `ToolRegistration`
+- [x] `GetAsync` returns the first matching capability by tool name, or null
+- [x] No in-memory cache — every call opens a DbContext
+- [x] New unit test project `tests/McpGuard.ServerRegistry.Tests/` created, references `McpGuard.ServerRegistry` + `Microsoft.EntityFrameworkCore.InMemory` (or SQLite temp file); tests use a hand-seeded `McpDbContext` (Object Mother pattern, no mocks)
+- [x] Tests: `Store_tool_registry_returns_capabilities_from_enabled_servers`,
   `Store_tool_registry_returns_null_for_unknown_tool`,
   `Store_tool_registry_excludes_disabled_servers`,
   `Store_tool_registry_reads_live_no_cache_between_calls`,
   `Store_tool_registry_maps_input_schema_from_json`
-- [ ] Gate passes: `dotnet test tests/McpGuard.ServerRegistry.Tests` (≥5 tests)
-- [ ] Test count: ≥5 new tests pass
+- [x] Gate passes: `dotnet test tests/McpGuard.ServerRegistry.Tests` (≥5 tests)
+- [x] Test count: ≥5 new tests pass (5 passing)
 **Tests:** unit
 **Gate:** quick
 **Commit:** `feat(server-registry): implement StoreToolRegistry with live SQLite read`
@@ -298,15 +298,15 @@ calls the URI overload. Replace the `Class1` placeholder.
 **Requirement:** M2-R7, M2-R9
 **Tools:** MCP: none. Skill: none.
 **Done when:**
-- [ ] `ICapabilityDiscoverer` + `DiscoveredTool` defined
-- [ ] `SdkCapabilityDiscoverer` implements both overloads; URI overload uses `IMcpClientFactory.CreateAsync` + `ListToolsAsync`
-- [ ] New unit test project `tests/McpGuard.CapabilityCatalog.Tests/` created; tests use a hand-written `FakeMcpClientFactory` (no mocks) returning canned `ListToolsResult`; `DiscoverAsync(serverId)` overload tested with a seeded `McpDbContext` (SQLite temp file)
-- [ ] Tests: `Discover_async_via_downstream_returns_tools_with_schemas`,
+- [x] `ICapabilityDiscoverer` + `DiscoveredTool` defined
+- [x] `SdkCapabilityDiscoverer` implements both overloads; URI overload uses `IMcpClientFactory.CreateAsync` + `ListToolsAsync`
+- [x] New unit test project `tests/McpGuard.CapabilityCatalog.Tests/` created; tests use a hand-written `FakeMcpClientFactory` (no mocks) returning canned `ListToolsResult`; `DiscoverAsync(serverId)` overload tested with a seeded `McpDbContext` (SQLite temp file)
+- [x] Tests: `Discover_async_via_downstream_returns_tools_with_schemas`,
   `Discover_async_by_server_id_lookups_url_then_discovers`,
   `Discover_async_on_unreachable_downstream_throws`,
   `Discover_async_on_empty_downstream_returns_empty_list`
-- [ ] Gate passes: `dotnet test tests/McpGuard.CapabilityCatalog.Tests` (≥4 tests)
-- [ ] Test count: ≥4 new tests pass
+- [x] Gate passes: `dotnet test tests/McpGuard.CapabilityCatalog.Tests` (≥4 tests)
+- [x] Test count: ≥4 new tests pass (4 passing)
 **Tests:** unit
 **Gate:** quick
 **Commit:** `feat(capability-catalog): implement SdkCapabilityDiscoverer via tools/list`
@@ -331,16 +331,16 @@ enabled servers respond within the timeout.
 **Requirement:** M2-R21, M2-R23
 **Tools:** MCP: none. Skill: none.
 **Done when:**
-- [ ] `DownstreamHealthCheck` implements `IHealthCheck`; probes via `ListToolsAsync`
-- [ ] `DownstreamHealthCheckOptions` has a `Timeout` property (default 5s)
-- [ ] Skips disabled servers (verified in a test)
-- [ ] New unit test project `tests/McpGuard.HealthChecks.Tests/` created; tests use a hand-written `FakeMcpClientFactory` (fast-responding + slow-responding + throwing variants) and a seeded `McpDbContext`
-- [ ] Tests: `Health_check_reports_healthy_when_all_enabled_servers_reachable`,
+- [x] `DownstreamHealthCheck` implements `IHealthCheck`; probes via `ListToolsAsync`
+- [x] `DownstreamHealthCheckOptions` has a `Timeout` property (default 5s)
+- [x] Skips disabled servers (verified in a test)
+- [x] New unit test project `tests/McpGuard.HealthChecks.Tests/` created; tests use a hand-written `FakeMcpClientFactory` (fast-responding + slow-responding + throwing variants) and a seeded `McpDbContext`
+- [x] Tests: `Health_check_reports_healthy_when_all_enabled_servers_reachable`,
   `Health_check_reports_unhealthy_when_any_enabled_server_unreachable`,
   `Health_check_skips_disabled_servers`,
   `Health_check_respects_timeout_for_slow_server`
-- [ ] Gate passes: `dotnet test tests/McpGuard.HealthChecks.Tests` (≥4 tests)
-- [ ] Test count: ≥4 new tests pass
+- [x] Gate passes: `dotnet test tests/McpGuard.HealthChecks.Tests` (≥4 tests)
+- [x] Test count: ≥4 new tests pass (4 passing)
 **Tests:** unit
 **Gate:** quick
 **Commit:** `feat(health-checks): implement DownstreamHealthCheck via tools/list probe`
@@ -367,19 +367,19 @@ extension method grouping the routes.
 **Requirement:** M2-R1, M2-R2, M2-R3, M2-R4, M2-R5, M2-R6, M2-R7, M2-R8
 **Tools:** MCP: none. Skill: none.
 **Done when:**
-- [ ] `Program.cs` configures `McpDbContext` (SQLite, shared file from `McpGuard:Store:SqlitePath`), applies migrations on startup
-- [ ] `POST /servers` validates payload (400 on missing/malformed URL), persists server, calls discoverer, branches on success/failure
-- [ ] `GET /servers`, `GET /servers/{id}`, `PUT /servers/{id}`, `DELETE /servers/{id}` all work with 404 on missing
-- [ ] New integration test project `tests/McpGuard.Admin.Api.Tests/` created (xUnit, `Sdk.Web`, real Kestrel on a random port, SQLite temp file); tests use a hand-seeded `McpDbContext` + a fake `ICapabilityDiscoverer` (no mocks — hand-written fake returning canned `DiscoveredTool` lists)
-- [ ] Tests: `Register_server_persists_and_triggers_discovery`,
+- [x] `Program.cs` configures `McpDbContext` (SQLite, shared file from `McpGuard:Store:SqlitePath`), applies migrations on startup
+- [x] `POST /servers` validates payload (400 on missing/malformed URL), persists server, calls discoverer, branches on success/failure
+- [x] `GET /servers`, `GET /servers/{id}`, `PUT /servers/{id}`, `DELETE /servers/{id}` all work with 404 on missing
+- [x] New integration test project `tests/McpGuard.Admin.Api.Tests/` created (xUnit, `Sdk.Web`, real Kestrel on a random port, SQLite temp file); tests use a hand-seeded `McpDbContext` + a fake `ICapabilityDiscoverer` (no mocks — hand-written fake returning canned `DiscoveredTool` lists)
+- [x] Tests: `Register_server_persists_and_triggers_discovery`,
   `Register_server_with_invalid_url_returns_400`,
   `Register_server_when_discovery_fails_persists_with_discovery_failed_state`,
   `Get_servers_returns_all`,
   `Get_server_by_id_returns_404_for_unknown`,
   `Put_server_updates_mutable_fields`,
   `Delete_server_returns_204_or_404`
-- [ ] Gate passes: `dotnet test tests/McpGuard.Admin.Api.Tests` (≥7 tests)
-- [ ] Test count: ≥7 new tests pass
+- [x] Gate passes: `dotnet test tests/McpGuard.Admin.Api.Tests` (≥7 tests)
+- [x] Test count: ≥7 new tests pass (7 passing)
 **Tests:** integration (real Kestrel + SQLite temp file; no Docker needed for Admin API tests)
 **Gate:** full
 **Commit:** `feat(admin-api): wire hosting and server CRUD with on-register discovery`
