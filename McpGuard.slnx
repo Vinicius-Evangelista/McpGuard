@@ -30,6 +30,7 @@
     <Project Path="tests/McpGuard.Admin.Api.Tests/McpGuard.Admin.Api.Tests.csproj" />
     <Project Path="tests/McpGuard.CapabilityCatalog.Tests/McpGuard.CapabilityCatalog.Tests.csproj" />
     <Project Path="tests/McpGuard.Gateway.Api.Tests/McpGuard.Gateway.Api.Tests.csproj" />
+    <Project Path="tests/McpGuard.M2.Integration.Tests/McpGuard.M2.Integration.Tests.csproj" />
     <Project Path="tests/McpGuard.HealthChecks.Tests/McpGuard.HealthChecks.Tests.csproj" />
     <Project Path="tests/McpGuard.ServerRegistry.Tests/McpGuard.ServerRegistry.Tests.csproj" />
     <Project Path="tests/McpGuard.ToolRegistry.Tests/McpGuard.ToolRegistry.Tests.csproj" />
