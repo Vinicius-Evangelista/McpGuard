@@ -67,6 +67,7 @@ public sealed class IntegrationTestFixture : IAsyncLifetime
         builder.WebHost.UseUrls("http://127.0.0.1:5099");
 
         builder.Services.AddSingleton<IToolRegistry>(new TestToolRegistry(testTools));
+        builder.Services.AddSingleton<IAsyncToolRegistry>(new TestToolRegistry(testTools));
         builder.Services.AddSingleton<IAuditSink>(AuditSink);
         builder.Services.AddSingleton<IMcpClientFactory, SdkMcpClientFactory>();
         builder.Services.AddSingleton<IToolRouter, DefaultToolRouter>();
