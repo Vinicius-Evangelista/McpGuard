@@ -40,5 +40,8 @@ public sealed class FakeMcpDownstreamClient : IMcpDownstreamClient
         return Task.FromResult(result);
     }
 
+    public Task<ListToolsResult> ListToolsAsync(CancellationToken ct) =>
+        throw new NotImplementedException("FakeMcpDownstreamClient.ListToolsAsync is not configured for M1 tests.");
+
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

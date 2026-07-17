@@ -29,6 +29,11 @@ public sealed class SdkMcpDownstreamClient : IMcpDownstreamClient
         return await _client.CallToolAsync(requestParams, ct);
     }
 
+    public async Task<ListToolsResult> ListToolsAsync(CancellationToken ct)
+    {
+        return await _client.ListToolsAsync(ct);
+    }
+
     public ValueTask DisposeAsync()
     {
         return _client.DisposeAsync();

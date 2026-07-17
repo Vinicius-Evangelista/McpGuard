@@ -6,4 +6,6 @@ namespace McpGuard.ToolRouter;
 public interface IMcpDownstreamClient : IAsyncDisposable
 {
     Task<CallToolResult> CallToolAsync(string toolName, JsonElement arguments, CancellationToken ct);
+
+    Task<ListToolsResult> ListToolsAsync(CancellationToken ct);
 }
