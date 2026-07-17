@@ -11,10 +11,12 @@
     <ProjectReference Include="..\McpGuard.ToolRouter\McpGuard.ToolRouter.csproj" />
     <ProjectReference Include="..\McpGuard.Audit\McpGuard.Audit.csproj" />
     <ProjectReference Include="..\McpGuard.McpClient.Sdk\McpGuard.McpClient.Sdk.csproj" />
+    <ProjectReference Include="..\..\controlplane\McpGuard.ServerRegistry\McpGuard.ServerRegistry.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="ModelContextProtocol.AspNetCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
   </ItemGroup>
 
 </Project>

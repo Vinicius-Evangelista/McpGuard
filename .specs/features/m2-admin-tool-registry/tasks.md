@@ -530,13 +530,13 @@ to `appsettings.json` (default `./mcpguard.db`).
 **Requirement:** M2-R19, M2-R20 (gateway half)
 **Tools:** MCP: none. Skill: none.
 **Done when:**
-- [ ] `Program.cs` configures `McpDbContext` + registers `IAsyncToolRegistry → StoreToolRegistry`
-- [ ] `DefaultToolRouter` resolves `IAsyncToolRegistry` (no longer `IToolRegistry`)
-- [ ] `McpGatewayHandler.ListToolsAsync` populates `Tool.InputSchema` from `ToolRegistration.InputSchema`
-- [ ] `appsettings.json` has `McpGuard:Store:SqlitePath` (default `./mcpguard.db`)
-- [ ] M1 `ConfigToolRegistry` registration kept (compat); M1 `IToolRegistry` tests still pass
-- [ ] Gate passes: `dotnet build src/runtime/McpGuard.Gateway.Api/McpGuard.Gateway.Api.csproj`
-- [ ] Test count: N/A at this task (integration tests in T19); unit tests for ToolRouter + ToolRegistry still pass
+- [x] `Program.cs` configures `McpDbContext` + registers `IAsyncToolRegistry → StoreToolRegistry`
+- [x] `DefaultToolRouter` resolves `IAsyncToolRegistry` (no longer `IToolRegistry`)
+- [x] `McpGatewayHandler.ListToolsAsync` populates `Tool.InputSchema` from `ToolRegistration.InputSchema`
+- [x] `appsettings.json` has `McpGuard:Store:SqlitePath` (default `./mcpguard.db`)
+- [x] M1 `ConfigToolRegistry` registration kept (compat); M1 `IToolRegistry` tests still pass
+- [x] Gate passes: `dotnet build src/runtime/McpGuard.Gateway.Api/McpGuard.Gateway.Api.csproj`
+- [x] Test count: N/A at this task (integration tests in T19); unit tests for ToolRouter + ToolRegistry still pass
 **Tests:** integration (covered in T19)
 **Gate:** build
 **Commit:** `refactor(gateway): swap to StoreToolRegistry and forward InputSchema in tools/list`
