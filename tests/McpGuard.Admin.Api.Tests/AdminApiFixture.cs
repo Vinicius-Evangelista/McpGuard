@@ -2,12 +2,15 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using McpGuard.CapabilityCatalog;
+using McpGuard.HealthChecks;
 using McpGuard.ServerRegistry;
+using McpGuard.ToolRouter;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using ModelContextProtocol.Protocol;
 using Xunit;
 
 namespace McpGuard.Admin.Api.Tests;
@@ -18,6 +21,7 @@ public sealed class AdminApiFixture : IAsyncLifetime
     private string? _sqlitePath;
     public HttpClient HttpClient { get; private set; } = new();
     public FakeCapabilityDiscoverer Discoverer { get; } = new();
+    public FakeMcpClientFactory ClientFactory { get; } = new();
 
     public IDbContextFactory<McpDbContext> GetDbContextFactory() =>
         _app?.Services.GetRequiredService<IDbContextFactory<McpDbContext>>()
@@ -36,7 +40,8 @@ public sealed class AdminApiFixture : IAsyncLifetime
         var connectionString = $"Data Source={_sqlitePath}";
         builder.Services.AddDbContextFactory<McpDbContext>(o => o.UseSqlite(connectionString));
         builder.Services.AddSingleton<ICapabilityDiscoverer>(Discoverer);
-        builder.Services.AddHealthChecks();
+        builder.Services.AddSingleton<IMcpClientFactory>(ClientFactory);
+        builder.Services.AddHealthChecks().AddCheck<DownstreamHealthCheck>("downstream");
 
         var app = builder.Build();
         _app = app;
@@ -49,7 +54,7 @@ public sealed class AdminApiFixture : IAsyncLifetime
         }
 
         app.MapAdminEndpoints();
-        app.MapHealthChecks("/health");
+        app.MapAdminHealthEndpoints();
 
         await app.StartAsync();
 
@@ -99,4 +104,29 @@ public sealed class FakeCapabilityDiscoverer : ICapabilityDiscoverer
         }
         return Task.FromResult(Tools);
     }
+}
+
+public sealed class FakeMcpClientFactory : IMcpClientFactory
+{
+    public Exception? ExceptionToThrow { get; set; }
+
+    public Task<IMcpDownstreamClient> CreateAsync(Uri downstreamUrl, CancellationToken ct)
+    {
+        if (ExceptionToThrow is not null)
+        {
+            return Task.FromException<IMcpDownstreamClient>(ExceptionToThrow);
+        }
+        return Task.FromResult<IMcpDownstreamClient>(new FakeMcpDownstreamClient());
+    }
+}
+
+internal sealed class FakeMcpDownstreamClient : IMcpDownstreamClient
+{
+    public Task<ListToolsResult> ListToolsAsync(CancellationToken ct) =>
+        Task.FromResult(new ListToolsResult());
+
+    public Task<CallToolResult> CallToolAsync(string toolName, JsonElement arguments, CancellationToken ct) =>
+        throw new NotImplementedException();
+
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

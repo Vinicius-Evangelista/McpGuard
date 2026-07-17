@@ -36,6 +36,6 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.MapAdminEndpoints();
-app.MapHealthChecks("/health");
+app.MapAdminHealthEndpoints();
 
 app.Run();
