@@ -14,6 +14,7 @@ builder.Services.Configure<ToolRegistryOptions>(
     builder.Configuration.GetSection("McpGuard"));
 
 builder.Services.AddSingleton<IToolRegistry, ConfigToolRegistry>();
+builder.Services.AddSingleton<IAsyncToolRegistry, ConfigToolRegistry>();
 builder.Services.AddSingleton<IAuditSink, LoggerAuditSink>();
 builder.Services.AddSingleton<IMcpClientFactory, SdkMcpClientFactory>();
 builder.Services.AddSingleton<IToolRouter, DefaultToolRouter>();

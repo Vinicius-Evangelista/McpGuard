@@ -2,14 +2,15 @@ using McpGuard.ToolRegistry;
 
 namespace McpGuard.ToolRouter.Tests.Fakes;
 
-public sealed class FakeToolRegistry : IToolRegistry
+public sealed class FakeAsyncToolRegistry : IAsyncToolRegistry
 {
     private readonly IReadOnlyList<ToolRegistration> _tools;
 
-    public FakeToolRegistry(IReadOnlyList<ToolRegistration> tools) => _tools = tools;
+    public FakeAsyncToolRegistry(IReadOnlyList<ToolRegistration> tools) => _tools = tools;
 
-    public IReadOnlyList<ToolRegistration> GetAll(CancellationToken ct) => _tools;
+    public Task<IReadOnlyList<ToolRegistration>> GetAllAsync(CancellationToken ct) =>
+        Task.FromResult(_tools);
 
-    public ToolRegistration? Get(string name, CancellationToken ct) =>
-        _tools.FirstOrDefault(t => t.Name == name);
+    public Task<ToolRegistration?> GetAsync(string name, CancellationToken ct) =>
+        Task.FromResult(_tools.FirstOrDefault(t => t.Name == name));
 }

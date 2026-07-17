@@ -28,7 +28,7 @@ public sealed class McpGatewayHandler : IMcpGatewayHandler
     {
         var sessionId = context.Server.SessionId ?? "";
 
-        var visible = _router.ListVisibleTools(ct);
+        var visible = await _router.ListVisibleToolsAsync(ct);
 
         await _audit.LogAsync(new AuditEvent(
             Timestamp: DateTimeOffset.UtcNow,

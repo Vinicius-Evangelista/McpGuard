@@ -10,14 +10,14 @@ namespace McpGuard.ToolRouter.Tests;
 
 public sealed class Default_tool_router
 {
-    private readonly FakeToolRegistry _registry;
+    private readonly FakeAsyncToolRegistry _registry;
     private readonly FakeAuditSink _audit;
     private readonly FakeMcpClientFactory _clientFactory;
     private readonly DefaultToolRouter _sut;
 
     public Default_tool_router()
     {
-        _registry = new FakeToolRegistry(AllToolRegistrations());
+        _registry = new FakeAsyncToolRegistry(AllToolRegistrations());
         _audit = new FakeAuditSink();
         _clientFactory = new FakeMcpClientFactory()
             .WithToolResult("echo", EchoCallToolResult())
@@ -26,9 +26,9 @@ public sealed class Default_tool_router
     }
 
     [Fact]
-    public void List_visible_tools_hides_disallowed_and_invisible()
+    public async Task List_visible_tools_hides_disallowed_and_invisible()
     {
-        var visible = _sut.ListVisibleTools(CancellationToken.None);
+        var visible = await _sut.ListVisibleToolsAsync(CancellationToken.None);
 
         Assert.All(visible, t => Assert.True(t.Allowed && t.Visible));
         Assert.DoesNotContain(visible, t => t.Name == "dangerous");
