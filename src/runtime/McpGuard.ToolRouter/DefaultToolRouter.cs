@@ -52,9 +52,23 @@ public sealed class DefaultToolRouter : IToolRouter
             Outcome: "tools.call.allowed",
             Reason: null), ct);
 
-        await using var client = await _clientFactory.CreateAsync(tool.DownstreamUrl, ct);
-        var result = await client.CallToolAsync(toolName, arguments, ct);
-
-        return new RouteResult(Allowed: true, Result: result, BlockReason: null);
+        try
+        {
+            await using var client = await _clientFactory.CreateAsync(tool.DownstreamUrl, ct);
+            var result = await client.CallToolAsync(toolName, arguments, ct);
+            return new RouteResult(Allowed: true, Result: result, BlockReason: null);
+        }
+        catch
+        {
+            var reason = $"downstream-unreachable: {tool.ServerId ?? tool.DownstreamUrl.ToString()}";
+            await _audit.LogAsync(new AuditEvent(
+                Timestamp: DateTimeOffset.UtcNow,
+                SessionId: sessionId,
+                Method: "tools/call",
+                ToolName: toolName,
+                Outcome: "tools.call.blocked",
+                Reason: reason), ct);
+            return new RouteResult(Allowed: false, Result: null, BlockReason: reason);
+        }
     }
 }

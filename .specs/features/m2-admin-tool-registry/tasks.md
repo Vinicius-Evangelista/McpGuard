@@ -433,14 +433,14 @@ per-server status JSON. Use a custom `HealthResponseWriter` that formats
 **Requirement:** M2-R22
 **Tools:** MCP: none. Skill: none.
 **Done when:**
-- [ ] `GET /health` returns 200 when all enabled servers reachable, 503 otherwise
-- [ ] Response body is JSON with per-server status keyed by server id
-- [ ] Tests added to `tests/McpGuard.Admin.Api.Tests/`:
+- [x] `GET /health` returns 200 when all enabled servers reachable, 503 otherwise
+- [x] Response body is JSON with per-server status keyed by server id
+- [x] Tests added to `tests/McpGuard.Admin.Api.Tests/`:
   `Health_endpoint_returns_200_when_all_servers_reachable`,
   `Health_endpoint_returns_503_when_any_server_unreachable`,
   `Health_endpoint_response_includes_per_server_status`
-- [ ] Gate passes: `dotnet test tests/McpGuard.Admin.Api.Tests` (≥3 new + ≥15 existing = ≥18 tests)
-- [ ] Test count: ≥18 tests pass
+- [x] Gate passes: `dotnet test tests/McpGuard.Admin.Api.Tests` (≥3 new + ≥15 existing = ≥18 tests)
+- [x] Test count: ≥18 tests pass (18 passing)
 **Tests:** integration
 **Gate:** full
 **Commit:** `feat(admin-api): add /health endpoint with per-server downstream status`
@@ -468,16 +468,16 @@ interface it implements)
 **Requirement:** M2-R13, M2-R14, M2-R18
 **Tools:** MCP: none. Skill: none.
 **Done when:**
-- [ ] `IToolRouter.ListVisibleToolsAsync` returns `Task<IReadOnlyList<ToolRegistration>>`
-- [ ] `DefaultToolRouter` ctor takes `IAsyncToolRegistry`; `ListVisibleToolsAsync` + `RouteCallAsync` await the async registry
-- [ ] `McpGatewayHandler.ListToolsAsync` awaits `ListVisibleToolsAsync`
-- [ ] Router unit tests updated to use `IAsyncToolRegistry` fakes; existing M1 behavior tests
+- [x] `IToolRouter.ListVisibleToolsAsync` returns `Task<IReadOnlyList<ToolRegistration>>`
+- [x] `DefaultToolRouter` ctor takes `IAsyncToolRegistry`; `ListVisibleToolsAsync` + `RouteCallAsync` await the async registry
+- [x] `McpGatewayHandler.ListToolsAsync` awaits `ListVisibleToolsAsync`
+- [x] Router unit tests updated to use `IAsyncToolRegistry` fakes; existing M1 behavior tests
   pass unchanged in intent (visible filter, allowed routing, blocked routing, invisible
   blocking): `dotnet test tests/McpGuard.ToolRouter.Tests` (8 tests, possibly renamed to match
   async behavior — names stay snake_case descriptive)
-- [ ] Gate passes: `dotnet build src/runtime/McpGuard.ToolRouter/McpGuard.ToolRouter.csproj`
+- [x] Gate passes: `dotnet build src/runtime/McpGuard.ToolRouter/McpGuard.ToolRouter.csproj`
   + `dotnet test tests/McpGuard.ToolRouter.Tests`
-- [ ] Test count: 8 tests pass (no silent deletions; renames OK if behavior is preserved)
+- [x] Test count: 8 tests pass (no silent deletions; renames OK if behavior is preserved)
 **Tests:** unit
 **Gate:** quick
 **Commit:** `refactor(tool-router): switch DefaultToolRouter to IAsyncToolRegistry`
@@ -496,17 +496,17 @@ exception internals), return `RouteResult(false, null, reason)`. Do not re-throw
 **Requirement:** M2-R24, M2-R25, M2-R26
 **Tools:** MCP: none. Skill: none.
 **Done when:**
-- [ ] `RouteCallAsync` try/catch wraps the downstream `CreateAsync` + `CallToolAsync`
-- [ ] Catch emits `AuditEvent` with `Outcome="tools.call.blocked"`, `Reason="downstream-unreachable: <serverId>"`
-- [ ] Catch returns `RouteResult(false, null, reason)`; no re-throw
-- [ ] Reason string does not include exception messages or stack traces
-- [ ] New router unit tests using a `FakeMcpClientFactory` that throws on `CreateAsync` and a
+- [x] `RouteCallAsync` try/catch wraps the downstream `CreateAsync` + `CallToolAsync`
+- [x] Catch emits `AuditEvent` with `Outcome="tools.call.blocked"`, `Reason="downstream-unreachable: <serverId>"`
+- [x] Catch returns `RouteResult(false, null, reason)`; no re-throw
+- [x] Reason string does not include exception messages or stack traces
+- [x] New router unit tests using a `FakeMcpClientFactory` that throws on `CreateAsync` and a
   second that returns a `FakeMcpDownstreamClient` whose `CallToolAsync` throws:
   `Route_call_on_unreachable_downstream_emits_blocked_audit_with_downstream_unreachable_reason`,
   `Route_call_on_unreachable_downstream_returns_route_result_blocked`,
   `Route_call_on_unreachable_downstream_does_not_leak_exception_in_reason`
-- [ ] Gate passes: `dotnet test tests/McpGuard.ToolRouter.Tests` (8 existing + 3 new = 11 tests)
-- [ ] Test count: 11 tests pass
+- [x] Gate passes: `dotnet test tests/McpGuard.ToolRouter.Tests` (8 existing + 3 new = 11 tests)
+- [x] Test count: 11 tests pass
 **Tests:** unit
 **Gate:** quick
 **Commit:** `feat(tool-router): handle downstream-unreachable with blocked audit and clear reason`
