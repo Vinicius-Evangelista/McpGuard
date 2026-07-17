@@ -4,13 +4,13 @@ using System.Text.Json;
 using McpGuard.Admin.Api;
 using Xunit;
 
-namespace McpGuard.M2.Integration.Tests;
+namespace McpGuard.Gateway.Api.Tests;
 
-public sealed class M2_end_to_end : IClassFixture<M2IntegrationFixture>
+public sealed class Admin_gateway_end_to_end : IClassFixture<AdminGatewayFixture>
 {
-    private readonly M2IntegrationFixture _fixture;
+    private readonly AdminGatewayFixture _fixture;
 
-    public M2_end_to_end(M2IntegrationFixture fixture)
+    public Admin_gateway_end_to_end(AdminGatewayFixture fixture)
     {
         _fixture = fixture;
     }
@@ -76,9 +76,9 @@ public sealed class M2_end_to_end : IClassFixture<M2IntegrationFixture>
     [Fact]
     public async Task Register_server_via_admin_api_then_gateway_tools_list_reflects_discovered_tools()
     {
-        var server = await RegisterServerAsync("m2-register-" + Guid.NewGuid().ToString("N")[..8]);
+        var server = await RegisterServerAsync("admin-register-" + Guid.NewGuid().ToString("N")[..8]);
 
-        await InitializeSessionAsync("m2-register-client");
+        await InitializeSessionAsync("admin-register-client");
 
         var response = await SendListAsync();
 
@@ -93,10 +93,10 @@ public sealed class M2_end_to_end : IClassFixture<M2IntegrationFixture>
     [Fact]
     public async Task Patch_capability_visible_false_drops_tool_from_gateway_tools_list_without_restart()
     {
-        var server = await RegisterServerAsync("m2-visible-" + Guid.NewGuid().ToString("N")[..8]);
+        var server = await RegisterServerAsync("admin-visible-" + Guid.NewGuid().ToString("N")[..8]);
         var cap = await GetCapabilityAsync(server.Id, "echo");
 
-        await InitializeSessionAsync("m2-visible-client");
+        await InitializeSessionAsync("admin-visible-client");
 
         var before = await SendListAsync();
         var beforeNames = before.GetProperty("result").GetProperty("tools")
@@ -127,10 +127,10 @@ public sealed class M2_end_to_end : IClassFixture<M2IntegrationFixture>
     [Fact]
     public async Task Patch_capability_allowed_false_blocks_gateway_tools_call()
     {
-        var server = await RegisterServerAsync("m2-allowed-" + Guid.NewGuid().ToString("N")[..8]);
+        var server = await RegisterServerAsync("admin-allowed-" + Guid.NewGuid().ToString("N")[..8]);
         var cap = await GetCapabilityAsync(server.Id, "echo");
 
-        await InitializeSessionAsync("m2-allowed-client");
+        await InitializeSessionAsync("admin-allowed-client");
 
         var patchResponse = await _fixture.AdminHttpClient.PatchAsJsonAsync(
             $"/capabilities/{cap.Id}",
@@ -154,9 +154,9 @@ public sealed class M2_end_to_end : IClassFixture<M2IntegrationFixture>
     [Fact]
     public async Task Tools_call_on_unreachable_downstream_returns_isError_and_emits_downstream_unreachable_audit()
     {
-        var server = await RegisterServerAsync("m2-unreachable-" + Guid.NewGuid().ToString("N")[..8]);
+        var server = await RegisterServerAsync("admin-unreachable-" + Guid.NewGuid().ToString("N")[..8]);
 
-        await InitializeSessionAsync("m2-unreachable-client");
+        await InitializeSessionAsync("admin-unreachable-client");
 
         var workingResponse = await SendCallAsync("echo", new Dictionary<string, object?> { ["message"] = "warmup" });
         var warmupResult = workingResponse.GetProperty("result");
@@ -171,7 +171,6 @@ public sealed class M2_end_to_end : IClassFixture<M2IntegrationFixture>
 
         var response = await SendCallAsync("echo", new Dictionary<string, object?> { ["message"] = "should-fail" });
 
-        Console.WriteLine($"[DEBUG unreachable] response JSON: {response.GetRawText()}");
         var result = response.GetProperty("result");
         Assert.True(result.TryGetProperty("isError", out var isErrorProp));
         Assert.True(isErrorProp.GetBoolean());
@@ -196,7 +195,7 @@ public sealed class M2_end_to_end : IClassFixture<M2IntegrationFixture>
     {
         await _fixture.ResetStateAsync();
         var registerRequest = new RegisterServerRequest(
-            "m2-health-" + Guid.NewGuid().ToString("N")[..8],
+            "admin-health-" + Guid.NewGuid().ToString("N")[..8],
             "http://127.0.0.1:1/mcp",
             true);
         var registerResponse = await _fixture.AdminHttpClient.PostAsJsonAsync("/servers", registerRequest);

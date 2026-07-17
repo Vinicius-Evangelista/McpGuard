@@ -7,6 +7,7 @@ using McpGuard.Admin.Api;
 using McpGuard.Audit;
 using McpGuard.CapabilityCatalog;
 using McpGuard.Gateway.Api;
+using McpGuard.Gateway.Api.Tests.Fakes;
 using McpGuard.HealthChecks;
 using McpGuard.McpClient.Sdk;
 using McpGuard.ServerRegistry;
@@ -18,9 +19,9 @@ using Microsoft.Extensions.DependencyInjection;
 using ModelContextProtocol.AspNetCore;
 using Xunit;
 
-namespace McpGuard.M2.Integration.Tests;
+namespace McpGuard.Gateway.Api.Tests;
 
-public sealed class M2IntegrationFixture : IAsyncLifetime
+public sealed class AdminGatewayFixture : IAsyncLifetime
 {
     private IContainer? _container;
     private WebApplication? _adminApp;
@@ -60,7 +61,7 @@ public sealed class M2IntegrationFixture : IAsyncLifetime
         var downstreamPort = _container.GetMappedPublicPort(8080);
         DownstreamUrl = $"http://localhost:{downstreamPort}/mcp";
 
-        _sqlitePath = Path.Combine(Path.GetTempPath(), $"mcpguard-m2-{Guid.NewGuid():N}.sqlite");
+        _sqlitePath = Path.Combine(Path.GetTempPath(), $"mcpguard-admin-gateway-{Guid.NewGuid():N}.sqlite");
         var connectionString = $"Data Source={_sqlitePath}";
 
         _adminApp = await BuildAdminAppAsync(connectionString);

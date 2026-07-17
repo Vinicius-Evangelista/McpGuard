@@ -67,12 +67,11 @@ McpGuard/
 | `McpGuard.ServerRegistry.Tests` | unit | 5 | `StoreToolRegistry` live read, mapping, disabled-server exclusion, no-cache, input-schema JSON |
 | `McpGuard.CapabilityCatalog.Tests` | unit | 4 | `SdkCapabilityDiscoverer` via fake `IMcpClientFactory`, by-server-id lookup, unreachable throws, empty downstream |
 | `McpGuard.HealthChecks.Tests` | unit | 4 | healthy/unreachable/skip-disabled/timeout paths |
-| `McpGuard.Gateway.Api.Tests` | integration (Testcontainers) | 7 | M1 end-to-end: initialize, tools/list, tools/call allowed + blocked, audit order |
+| `McpGuard.Gateway.Api.Tests` | integration (Testcontainers) | 12 | M1 end-to-end (initialize, tools/list, tools/call allowed + blocked, audit order) + admin-gateway end-to-end (register → tools/list reflects, visible PATCH, allowed PATCH blocks, downstream-unreachable, /health unhealthy) |
 | `McpGuard.Admin.Api.Tests` | integration (Kestrel + SQLite temp file) | 18 | server CRUD, on-register discovery, resync, capability PATCH/GET, /health |
-| `McpGuard.M2.Integration.Tests` | integration (Testcontainers + Kestrel) | 5 | M2 end-to-end: register → tools/list reflects, visible PATCH, allowed PATCH blocks, downstream-unreachable, /health unhealthy |
 
-Total after M2: **63 tests** (5+4+11+5+4+4+7+18+5). Unit tests run in-process, no network/Docker.
-Integration tests need Docker for Testcontainers (sample downstream + M2 fixture).
+Total after M2: **63 tests** (5+4+11+5+4+4+12+18). Unit tests run in-process, no network/Docker.
+Integration tests need Docker for Testcontainers (sample downstream + admin-gateway fixture).
 
 ## Dependency graph after M2
 
@@ -133,7 +132,7 @@ Authored 2026-06-12, dark theme. These remain the architectural spec for the MVP
 - `dotnet run --project src/runtime/McpGuard.Gateway.Api/McpGuard.Gateway.Api.csproj` — runs the gateway locally.
 - `dotnet run --project src/controlplane/McpGuard.Admin.Api/McpGuard.Admin.Api.csproj` — runs the admin API locally.
 - Unit-only quick gate: `dotnet test tests/McpGuard.ToolRegistry.Tests tests/McpGuard.Audit.Tests tests/McpGuard.ToolRouter.Tests tests/McpGuard.ServerRegistry.Tests tests/McpGuard.CapabilityCatalog.Tests tests/McpGuard.HealthChecks.Tests` (no Docker needed).
-- Integration: `dotnet test tests/McpGuard.Gateway.Api.Tests tests/McpGuard.Admin.Api.Tests tests/McpGuard.M2.Integration.Tests` (Docker required).
+- Integration: `dotnet test tests/McpGuard.Gateway.Api.Tests tests/McpGuard.Admin.Api.Tests` (Docker required).
 
 ## What M3+ will add (preview — full detail in the feature specs)
 

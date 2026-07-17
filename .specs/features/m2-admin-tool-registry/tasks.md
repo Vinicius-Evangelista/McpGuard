@@ -545,24 +545,23 @@ to `appsettings.json` (default `./mcpguard.db`).
 
 ### T17: End-to-end integration tests — Admin API + Gateway live-read + downstream-unreachable [x]
 
-**What:** Add M2 integration tests to `tests/McpGuard.Gateway.Api.Tests/` (and possibly a new
-`tests/McpGuard.M2.Integration.Tests/` if cleaner). The tests start both apps (Admin API on a
+**What:** Add admin-gateway integration tests to the existing `tests/McpGuard.Gateway.Api.Tests/`
+project (no dedicated phase-labeled project). The tests start both apps (Admin API on a
 random port, Gateway on another) sharing a temp-file SQLite; start the
-`McpGuard.SampleTools.Server` Testcontainer; then drive the M2 flow: register server via
+`McpGuard.SampleTools.Server` Testcontainer; then drive the admin-gateway flow: register server via
 Admin API → assert `tools/list` through the gateway reflects discovered tools → PATCH a
 capability to `Visible=false` → assert `tools/list` drops it (no restart) → PATCH back →
 assert returns → point a tool at a dead URL → call it → assert `isError` result + audit
 `tools.call.blocked` with `downstream-unreachable: <serverId>` reason.
-**Where:** `tests/McpGuard.Gateway.Api.Tests/M2IntegrationTests.cs` (new) or
-`tests/McpGuard.M2.Integration.Tests/` (new project — preferred, to keep M1 + M2 suites
-isolated)
+**Where:** `tests/McpGuard.Gateway.Api.Tests/AdminGatewayFixture.cs` (new fixture),
+`tests/McpGuard.Gateway.Api.Tests/AdminGatewayEndToEndTests.cs` (new test class)
 **Depends on:** T16, T13 (health), T15 (downstream-unreachable)
 **Reuses:** The M1 integration fixture pattern (Kestrel + Testcontainers + raw JSON-RPC);
 extend with an Admin API `HttpClient` + a temp-file SQLite
 **Requirement:** M2-R1, M2-R7, M2-R11, M2-R12, M2-R13, M2-R14, M2-R20, M2-R24, M2-R25, M2-R26
 **Tools:** MCP: none. Skill: none.
 **Done when:**
-- [x] New integration test project `tests/McpGuard.M2.Integration.Tests/` added to `McpGuard.slnx`
+- [x] Admin-gateway integration tests added to `tests/McpGuard.Gateway.Api.Tests/` (no new project)
 - [x] Tests use Testcontainers for the sample downstream, real Kestrel for both Admin API + Gateway, temp-file SQLite cleaned in `IAsyncLifetime.DisposeAsync`
 - [x] Fixture exposes `ResetStateAsync()` to clear servers/capabilities + session + audit between tests so each test is isolated despite the shared SQLite file
 - [x] Tests:
@@ -571,7 +570,7 @@ extend with an Admin API `HttpClient` + a temp-file SQLite
   `Patch_capability_allowed_false_blocks_gateway_tools_call`,
   `Tools_call_on_unreachable_downstream_returns_isError_and_emits_downstream_unreachable_audit`,
   `Health_endpoint_reports_unreachable_server_as_unhealthy`
-- [x] Gate passes: `dotnet test tests/McpGuard.M2.Integration.Tests` (requires Docker)
+- [x] Gate passes: `dotnet test tests/McpGuard.Gateway.Api.Tests` (requires Docker)
 - [x] Test count: 5 new tests pass (deterministic across repeated runs)
 **Tests:** integration
 **Gate:** full
@@ -592,7 +591,7 @@ to reflect the M1 + M2 wiring so future milestones plan against reality.
 **Tools:** MCP: none. Skill: none.
 **Done when:**
 - [x] `dotnet build McpGuard.slnx` exits 0 (all 26 projects)
-- [x] `dotnet test McpGuard.slnx` exits 0 (unit tests always; integration tests with Docker) — 63 tests pass (5+4+11+5+4+4+7+18+5)
+- [x] `dotnet test McpGuard.slnx` exits 0 (unit tests always; integration tests with Docker) — 63 tests pass (5+4+11+5+4+4+12+18)
 - [x] `.specs/codebase/STRUCTURE.md` reflects the M1 + M2 project reference graph (runtime + control-plane wiring)
 - [x] Test count: full solution test run passes (sum of all unit + integration tests; no silent deletions)
 - [x] Gate passes: `dotnet build McpGuard.slnx` + `dotnet test McpGuard.slnx`
