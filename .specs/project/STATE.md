@@ -5,6 +5,47 @@ preferences. Append-only per section; date each entry.
 
 ## Decisions
 
+### 2026-07-16 — M2 kickoff
+
+- **Milestone split realigned to Notion.** M2 is "Admin-Controlled Tool Registry" only, not
+  "Auth & Admin-managed registry" as the earlier local `ROADMAP.md` draft had it. OIDC bearer
+  auth, `IAuthenticator`, `ITenantContext`, tenant scoping, `PolicyStore`, and `TenantSettings`
+  are deferred to **M3 (Policy + Identity)**. The local `ROADMAP.md` was rewritten to match
+  the Notion M0–M4 split (M2 admin-registry; M3 policy+identity; M4 DLP+redaction+audit+
+  observability; M5 secrets+approvals; M6 observability+health).
+- **No auth on the Admin API in M2.** The Admin API is an open admin surface for the M2
+  iteration loop; network/policy protection is the operator's responsibility until M3 adds auth
+  to both the gateway and the Admin API.
+- **Registry interface:** introduce a new `IAsyncToolRegistry` (async `GetAllAsync`/`GetAsync`)
+  alongside M1's stable sync `IToolRegistry`. M1's `ConfigToolRegistry` and tests stay
+  unchanged (additive). The store-backed `StoreToolRegistry` implements `IAsyncToolRegistry`;
+  `DefaultToolRouter` switches to depend on the async interface.
+- **CapabilityCatalog discovery:** auto-discover via `tools/list` on server register, plus a
+  `POST /servers/{id}/resync` endpoint for re-pulling. Store one `CapabilityCatalog` entry per
+  returned tool (server id, name, description, input schema, synced-at). On discovery failure,
+  persist the server with a `discovery-failed` state and write no catalog entries. Matches
+  M1 `design.md:91-93` intent.
+- **Allowlist refresh:** live read, no cache. The gateway reads from the same SQLite store the
+  Admin API writes to on every `tools/list` call. Bounded refresh window = 0 seconds. M2
+  assumes Admin API + gateway share one process.
+- **Backing store:** SQLite via EF Core or Dapper — **Design phase picks the ORM**
+  (recommendation will be evaluated in Design; EF Core favored for migrations + `DbContext`
+  seam). Integration tests use a temp-file SQLite DB (no Testcontainers for the store; the M1
+  Testcontainers setup stays for the downstream `McpGuard.SampleTools.Server`).
+- **Downstream-unreachable path owned by M2.** `DefaultToolRouter.RouteCallAsync` wraps
+  `IMcpClientFactory.CreateAsync` + `IMcpDownstreamClient.CallToolAsync` in try/catch, emits
+  a `tools.call.blocked` audit event with a `downstream-unreachable` reason, returns
+  `RouteResult(false, null, reason)`. Closes the M1 eval category-9 `E_recall` miss
+  (`STATE.md:100-104`).
+- **M1 follow-ups rolled into M2:** (a) T-8 audit assertion — register
+  `ISessionMigrationHandler` in `IntegrationTestFixture.cs` and assert
+  `initialize:initialized` with an exact count in
+  `Audit_emits_initialized_listed_allowed_and_blocked_events_in_order`; (b) `-32602` vs
+  `isError` reconciliation — canonicalize `isError` in the M1 spec text
+  (`spec.md:22`, `design.md:232-250`), remove the `-32602` envelope clause for the tool-block
+  path (lower risk, matches the SDK contract); (c) `Program.cs:39-44` duplicate
+  `UseHttpsRedirection` + `MapMcp("/mcp")` cleanup.
+
 ### 2026-07-03 — M1 kickoff
 
 - **MCP SDK:** Use the official `ModelContextProtocol` C# SDK
@@ -91,24 +132,26 @@ _(none yet)_
       and assert `initialize:initialized` in
       `Audit_emits_initialized_listed_allowed_and_blocked_events_in_order`; tighten the
       `>= 4` tolerance to an exact count or assert all 4 outcomes. Lifts M1-R7 `T` to 1.00
-      and `Final` to 1.00. _(recorded 2026-07-09 from the eval)_
+      and `Final` to 1.00. _(recorded 2026-07-09 from the eval; rolled into M2 — see M2-R30)_
 - [ ] **M1 follow-up (design-vs-impl delta):** reconcile the `-32602` envelope clause in
       `spec.md:22` + `design.md:232-250` with the implemented `isError` shape — either
       canonicalize `isError` in the spec (lower risk, matches the SDK contract) or throw
       a `-32602` JSON-RPC error from `McpGatewayHandler.CallToolAsync`. _(recorded
-      2026-07-09 from the eval)_
-- [ ] **Deferred (not M1, follow-up for M2/M3):** address the downstream-unreachable
+      2026-07-09 from the eval; rolled into M2 — canonicalize `isError`, see M2-R31)_
+- [x] **Deferred (not M1, follow-up for M2/M3):** address the downstream-unreachable
       failure path in `DefaultToolRouter.RouteCallAsync` — catch SDK exceptions, emit a
       `tools.call.blocked` audit event with a downstream-unreachable reason, return a
       clear error. `E_recall` category-9 miss surfaced by the eval. _(recorded
-      2026-07-09)_
+      2026-07-09; owned by M2 — see M2-R24..R26)_
 - [ ] Cosmetic: remove the duplicate `UseHttpsRedirection` + `MapMcp("/mcp")` block in
-      `Program.cs:39-44`. _(recorded 2026-07-09 from the eval)_
-- [ ] Start M2 spec (Specify phase) under `.specs/features/m2-.../` — OIDC bearer auth
+      `Program.cs:39-44`. _(recorded 2026-07-09 from the eval; rolled into M2 — see M2-R32)_
+- [x] Start M2 spec (Specify phase) under `.specs/features/m2-.../` — OIDC bearer auth
       on `initialize`, Admin API CRUD for ServerRegistry/CapabilityCatalog/PolicyStore,
       store-backed `IToolRegistry`, per-tenant allowlist scoping. M1 is graded
       Spec-complete; M2 can begin once the M1-R7 T-8 follow-up is closed. _(recorded
-      2026-07-09)_
+      2026-07-09) — **Done 2026-07-16.** Scope realigned to Notion: M2 = Admin-Controlled
+      Tool Registry only (auth/tenant deferred to M3). Spec + context written at
+      `.specs/features/m2-admin-tool-registry/`. `_`
 
 ## Lessons
 
@@ -144,6 +187,12 @@ _(none yet)_
 
 ## Session log
 
+- **2026-07-16** — M2 Specify phase. Realigned milestone split to Notion (M2 admin-registry
+  only; auth/tenant to M3). Ran the tlc-spec-driven Specify → discuss-gray-areas flow with 7
+  locked decisions. Wrote `.specs/features/m2-admin-tool-registry/spec.md` (32 requirements
+  M2-R1…M2-R32) + `context.md`. Rewrote `.specs/project/ROADMAP.md` to the Notion M0–M6 split.
+  Next: Design phase (component map, DI wiring deltas, EF Core vs Dapper decision, sequence
+  diagrams for register+discover and live-read tools/list), then Tasks.
 - **2026-07-03** — M1 kickoff. Explored scaffold (20 empty projects, 4 architecture
   diagrams, no code, no refs, no packages). Ran the tlc-spec-driven Specify → Discuss →
   Design → Tasks flow. Captured 6 gray-area decisions via user discussion. Wrote

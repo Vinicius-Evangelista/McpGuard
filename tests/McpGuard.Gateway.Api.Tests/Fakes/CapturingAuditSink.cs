@@ -25,6 +25,15 @@ public sealed class CapturingAuditSink : IAuditSink
         }
     }
 
+    public void Clear()
+    {
+        lock (_lock)
+        {
+            _events.Clear();
+            Monitor.PulseAll(_lock);
+        }
+    }
+
     public async Task<IReadOnlyList<AuditEvent>> WaitForEvents(int count, TimeSpan timeout)
     {
         var deadline = DateTime.UtcNow + timeout;

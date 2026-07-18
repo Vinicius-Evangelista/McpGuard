@@ -17,6 +17,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\controlplane\McpGuard.Admin.Api\McpGuard.Admin.Api.csproj" />
+    <ProjectReference Include="..\..\src\controlplane\McpGuard.CapabilityCatalog\McpGuard.CapabilityCatalog.csproj" />
+    <ProjectReference Include="..\..\src\controlplane\McpGuard.HealthChecks\McpGuard.HealthChecks.csproj" />
+    <ProjectReference Include="..\..\src\controlplane\McpGuard.ServerRegistry\McpGuard.ServerRegistry.csproj" />
     <ProjectReference Include="..\..\src\runtime\McpGuard.Gateway.Api\McpGuard.Gateway.Api.csproj" />
     <ProjectReference Include="..\..\src\runtime\McpGuard.ToolRegistry\McpGuard.ToolRegistry.csproj" />
     <ProjectReference Include="..\..\src\runtime\McpGuard.ToolRouter\McpGuard.ToolRouter.csproj" />

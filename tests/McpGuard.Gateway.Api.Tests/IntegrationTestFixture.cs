@@ -20,6 +20,7 @@ public sealed class IntegrationTestFixture : IAsyncLifetime
     private IContainer? _container;
     private WebApplication? _gatewayApp;
     private HttpClient? _httpClient;
+    private string? _sessionId;
 
     public CapturingAuditSink AuditSink { get; } = new();
     public HttpClient HttpClient => _httpClient ?? throw new InvalidOperationException("HttpClient not initialized");
@@ -66,15 +67,17 @@ public sealed class IntegrationTestFixture : IAsyncLifetime
         builder.WebHost.UseUrls("http://127.0.0.1:5099");
 
         builder.Services.AddSingleton<IToolRegistry>(new TestToolRegistry(testTools));
+        builder.Services.AddSingleton<IAsyncToolRegistry>(new TestToolRegistry(testTools));
         builder.Services.AddSingleton<IAuditSink>(AuditSink);
         builder.Services.AddSingleton<IMcpClientFactory, SdkMcpClientFactory>();
         builder.Services.AddSingleton<IToolRouter, DefaultToolRouter>();
+        builder.Services.AddSingleton<ISessionMigrationHandler>(sp => new AuditSessionHandler(sp.GetRequiredService<IAuditSink>()));
         builder.Services.AddSingleton<IMcpGatewayHandler, McpGatewayHandler>();
 
         builder.Services.AddMcpServer()
             .WithHttpTransport(options =>
             {
-                options.Stateless = builder.Configuration.GetValue<bool>("McpGuard:Stateless");
+                options.Stateless = false;
             })
             .WithListToolsHandler((ctx, ct) => ctx.Services!.GetRequiredService<IMcpGatewayHandler>().ListToolsAsync(ctx, ct))
             .WithCallToolHandler((ctx, ct) => ctx.Services!.GetRequiredService<IMcpGatewayHandler>().CallToolAsync(ctx, ct));
@@ -95,9 +98,18 @@ public sealed class IntegrationTestFixture : IAsyncLifetime
 
         using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/mcp") { Content = content };
         httpRequest.Headers.Add("Accept", "application/json, text/event-stream");
+        if (_sessionId is not null)
+        {
+            httpRequest.Headers.Add("Mcp-Session-Id", _sessionId);
+        }
 
         using var response = await _httpClient!.SendAsync(httpRequest, HttpCompletionOption.ResponseContentRead);
         response.EnsureSuccessStatusCode();
+
+        if (response.Headers.TryGetValues("Mcp-Session-Id", out var sessionIds))
+        {
+            _sessionId = sessionIds.First();
+        }
 
         var responseBody = await response.Content.ReadAsStringAsync();
         var contentType = response.Content.Headers.ContentType?.MediaType ?? "";

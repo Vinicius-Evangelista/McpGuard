@@ -1,9 +1,11 @@
 using McpGuard.Audit;
 using McpGuard.Gateway.Api;
 using McpGuard.McpClient.Sdk;
+using McpGuard.ServerRegistry;
 using McpGuard.ToolRegistry;
 using McpGuard.ToolRouter;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ModelContextProtocol.AspNetCore;
@@ -13,7 +15,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<ToolRegistryOptions>(
     builder.Configuration.GetSection("McpGuard"));
 
+var sqlitePath = builder.Configuration.GetValue<string>("McpGuard:Store:SqlitePath") ?? "mcpguard.db";
+var dataDirectory = Path.GetDirectoryName(Path.GetFullPath(sqlitePath));
+if (!string.IsNullOrEmpty(dataDirectory))
+{
+    Directory.CreateDirectory(dataDirectory);
+}
+var connectionString = $"Data Source={sqlitePath}";
+
+builder.Services.AddDbContextFactory<McpDbContext>(o => o.UseSqlite(connectionString));
 builder.Services.AddSingleton<IToolRegistry, ConfigToolRegistry>();
+builder.Services.AddSingleton<IAsyncToolRegistry, StoreToolRegistry>();
 builder.Services.AddSingleton<IAuditSink, LoggerAuditSink>();
 builder.Services.AddSingleton<IMcpClientFactory, SdkMcpClientFactory>();
 builder.Services.AddSingleton<IToolRouter, DefaultToolRouter>();
@@ -30,12 +42,13 @@ builder.Services.AddMcpServer()
 
 var app = builder.Build();
 
-if (!app.Environment.IsDevelopment())
+await using (var scope = app.Services.CreateAsyncScope())
 {
-    app.UseHttpsRedirection();
+    var factory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<McpDbContext>>();
+    var db = await factory.CreateDbContextAsync();
+    await db.Database.MigrateAsync();
 }
 
-app.MapMcp("/mcp");
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();

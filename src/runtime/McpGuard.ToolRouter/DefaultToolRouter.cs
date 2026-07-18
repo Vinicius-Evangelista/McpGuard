@@ -6,20 +6,21 @@ namespace McpGuard.ToolRouter;
 
 public sealed class DefaultToolRouter : IToolRouter
 {
-    private readonly IToolRegistry _registry;
+    private readonly IAsyncToolRegistry _registry;
     private readonly IAuditSink _audit;
     private readonly IMcpClientFactory _clientFactory;
 
-    public DefaultToolRouter(IToolRegistry registry, IAuditSink audit, IMcpClientFactory clientFactory)
+    public DefaultToolRouter(IAsyncToolRegistry registry, IAuditSink audit, IMcpClientFactory clientFactory)
     {
         _registry = registry;
         _audit = audit;
         _clientFactory = clientFactory;
     }
 
-    public IReadOnlyList<ToolRegistration> ListVisibleTools(CancellationToken ct)
+    public async Task<IReadOnlyList<ToolRegistration>> ListVisibleToolsAsync(CancellationToken ct)
     {
-        return _registry.GetAll(ct)
+        var tools = await _registry.GetAllAsync(ct);
+        return tools
             .Where(t => t.Allowed && t.Visible)
             .ToList()
             .AsReadOnly();
@@ -27,7 +28,7 @@ public sealed class DefaultToolRouter : IToolRouter
 
     public async Task<RouteResult> RouteCallAsync(string toolName, JsonElement arguments, string sessionId, CancellationToken ct)
     {
-        var tool = _registry.Get(toolName, ct);
+        var tool = await _registry.GetAsync(toolName, ct);
 
         if (tool is null || !tool.Allowed || !tool.Visible)
         {
@@ -51,9 +52,23 @@ public sealed class DefaultToolRouter : IToolRouter
             Outcome: "tools.call.allowed",
             Reason: null), ct);
 
-        await using var client = await _clientFactory.CreateAsync(tool.DownstreamUrl, ct);
-        var result = await client.CallToolAsync(toolName, arguments, ct);
-
-        return new RouteResult(Allowed: true, Result: result, BlockReason: null);
+        try
+        {
+            await using var client = await _clientFactory.CreateAsync(tool.DownstreamUrl, ct);
+            var result = await client.CallToolAsync(toolName, arguments, ct);
+            return new RouteResult(Allowed: true, Result: result, BlockReason: null);
+        }
+        catch
+        {
+            var reason = $"downstream-unreachable: {tool.ServerId ?? tool.DownstreamUrl.ToString()}";
+            await _audit.LogAsync(new AuditEvent(
+                Timestamp: DateTimeOffset.UtcNow,
+                SessionId: sessionId,
+                Method: "tools/call",
+                ToolName: toolName,
+                Outcome: "tools.call.blocked",
+                Reason: reason), ct);
+            return new RouteResult(Allowed: false, Result: null, BlockReason: reason);
+        }
     }
 }

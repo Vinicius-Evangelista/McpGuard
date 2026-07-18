@@ -28,7 +28,7 @@ public sealed class McpGatewayHandler : IMcpGatewayHandler
     {
         var sessionId = context.Server.SessionId ?? "";
 
-        var visible = _router.ListVisibleTools(ct);
+        var visible = await _router.ListVisibleToolsAsync(ct);
 
         await _audit.LogAsync(new AuditEvent(
             Timestamp: DateTimeOffset.UtcNow,
@@ -38,11 +38,20 @@ public sealed class McpGatewayHandler : IMcpGatewayHandler
             Outcome: "tools.listed",
             Reason: null), ct);
 
-        var tools = visible.Select(t => new Tool
+        var tools = new List<Tool>();
+        foreach (var t in visible)
         {
-            Name = t.Name,
-            Description = t.Description
-        }).ToList();
+            var tool = new Tool
+            {
+                Name = t.Name,
+                Description = t.Description
+            };
+            if (t.InputSchema is { } schema && schema.ValueKind != JsonValueKind.Undefined)
+            {
+                tool.InputSchema = schema;
+            }
+            tools.Add(tool);
+        }
 
         return new ListToolsResult { Tools = tools };
     }

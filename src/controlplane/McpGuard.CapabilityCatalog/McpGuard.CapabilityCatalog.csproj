@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\runtime\McpGuard.ToolRouter\McpGuard.ToolRouter.csproj" />
+    <ProjectReference Include="..\McpGuard.ServerRegistry\McpGuard.ServerRegistry.csproj" />
+  </ItemGroup>
+
 </Project>

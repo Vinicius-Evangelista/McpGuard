@@ -223,6 +223,8 @@ public sealed class End_to_end : IClassFixture<IntegrationTestFixture>
     [Fact]
     public async Task Audit_emits_initialized_listed_allowed_and_blocked_events_in_order()
     {
+        _fixture.AuditSink.Clear();
+
         await _fixture.SendJsonRpcAsync(new
         {
             jsonrpc = "2.0",
@@ -271,11 +273,10 @@ public sealed class End_to_end : IClassFixture<IntegrationTestFixture>
         var events = await _fixture.AuditSink.WaitForEvents(4, TimeSpan.FromSeconds(10));
         var methods = events.Select(e => $"{e.Method}:{e.Outcome}").ToList();
 
-        Assert.True(methods.Count >= 4,
-            $"Expected at least 4 audit events, got {methods.Count}: {string.Join(", ", methods)}");
-
-        Assert.Contains("tools/list:tools.listed", methods);
-        Assert.Contains("tools/call:tools.call.allowed", methods);
-        Assert.Contains("tools/call:tools.call.blocked", methods);
+        Assert.Equal(4, methods.Count);
+        Assert.Equal("initialize:initialized", methods[0]);
+        Assert.Equal("tools/list:tools.listed", methods[1]);
+        Assert.Equal("tools/call:tools.call.allowed", methods[2]);
+        Assert.Equal("tools/call:tools.call.blocked", methods[3]);
     }
 }

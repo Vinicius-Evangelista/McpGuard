@@ -10,14 +10,14 @@ namespace McpGuard.ToolRouter.Tests;
 
 public sealed class Default_tool_router
 {
-    private readonly FakeToolRegistry _registry;
+    private readonly FakeAsyncToolRegistry _registry;
     private readonly FakeAuditSink _audit;
     private readonly FakeMcpClientFactory _clientFactory;
     private readonly DefaultToolRouter _sut;
 
     public Default_tool_router()
     {
-        _registry = new FakeToolRegistry(AllToolRegistrations());
+        _registry = new FakeAsyncToolRegistry(AllToolRegistrations());
         _audit = new FakeAuditSink();
         _clientFactory = new FakeMcpClientFactory()
             .WithToolResult("echo", EchoCallToolResult())
@@ -26,9 +26,9 @@ public sealed class Default_tool_router
     }
 
     [Fact]
-    public void List_visible_tools_hides_disallowed_and_invisible()
+    public async Task List_visible_tools_hides_disallowed_and_invisible()
     {
-        var visible = _sut.ListVisibleTools(CancellationToken.None);
+        var visible = await _sut.ListVisibleToolsAsync(CancellationToken.None);
 
         Assert.All(visible, t => Assert.True(t.Allowed && t.Visible));
         Assert.DoesNotContain(visible, t => t.Name == "dangerous");
@@ -108,6 +108,64 @@ public sealed class Default_tool_router
 
         Assert.Equal("tool 'dangerous' is not approved for execution", result.BlockReason);
     }
+
+    [Fact]
+    public async Task Route_call_on_unreachable_downstream_emits_blocked_audit_with_downstream_unreachable_reason()
+    {
+        var audit = new FakeAuditSink();
+        var registry = new FakeAsyncToolRegistry([ApprovedEchoToolWithServerId("server-42")]);
+        var clientFactory = new FakeMcpClientFactory()
+            .WithCreateAsyncException(new HttpRequestException("connection refused"));
+        var sut = new DefaultToolRouter(registry, audit, clientFactory);
+
+        await sut.RouteCallAsync("echo", EchoCallArguments(), "session-1", CancellationToken.None);
+
+        var events = audit.GetEvents();
+        Assert.Equal(2, events.Count);
+        Assert.Equal("tools.call.allowed", events[0].Outcome);
+        Assert.Equal("tools.call.blocked", events[1].Outcome);
+        Assert.Equal("downstream-unreachable: server-42", events[1].Reason);
+    }
+
+    [Fact]
+    public async Task Route_call_on_unreachable_downstream_returns_route_result_blocked()
+    {
+        var registry = new FakeAsyncToolRegistry([ApprovedEchoToolWithServerId("server-42")]);
+        var clientFactory = new FakeMcpClientFactory()
+            .WithCreateAsyncException(new HttpRequestException("connection refused"));
+        var sut = new DefaultToolRouter(registry, _audit, clientFactory);
+
+        var result = await sut.RouteCallAsync("echo", EchoCallArguments(), "session-1", CancellationToken.None);
+
+        Assert.False(result.Allowed);
+        Assert.Null(result.Result);
+        Assert.Equal("downstream-unreachable: server-42", result.BlockReason);
+    }
+
+    [Fact]
+    public async Task Route_call_on_unreachable_downstream_does_not_leak_exception_in_reason()
+    {
+        var registry = new FakeAsyncToolRegistry([ApprovedEchoToolWithServerId("server-42")]);
+        var clientFactory = new FakeMcpClientFactory()
+            .WithToolResult("echo", EchoCallToolResult())
+            .WithCallToolAsyncException(new InvalidOperationException("boom: connection refused at host 10.0.0.99"));
+        var sut = new DefaultToolRouter(registry, _audit, clientFactory);
+
+        var result = await sut.RouteCallAsync("echo", EchoCallArguments(), "session-1", CancellationToken.None);
+
+        Assert.Equal("downstream-unreachable: server-42", result.BlockReason);
+        Assert.DoesNotContain("boom", result.BlockReason!);
+        Assert.DoesNotContain("10.0.0.99", result.BlockReason!);
+        Assert.DoesNotContain("connection refused", result.BlockReason!);
+    }
+
+    private static ToolRegistration ApprovedEchoToolWithServerId(string serverId) => new(
+        Name: "echo",
+        Description: "Echoes the input message",
+        DownstreamUrl: new Uri("http://localhost:5010/mcp"),
+        Allowed: true,
+        Visible: true,
+        ServerId: serverId);
 
     private static ToolRegistration ApprovedEchoTool() => new(
         Name: "echo",
