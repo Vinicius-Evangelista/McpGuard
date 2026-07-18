@@ -177,7 +177,7 @@ public static class AdminEndpoints
                 server.UpdatedAt = now;
                 await db.SaveChangesAsync(ct);
 
-                return Results.Ok(new ResyncResultDto(server.Id, server.Capabilities.Count, now));
+                return Results.Ok(new ResyncResultDto(server.Id, server.Capabilities.Count, now, Warning: null));
             }
             catch (Exception)
             {
@@ -185,7 +185,7 @@ public static class AdminEndpoints
                 server.UpdatedAt = DateTimeOffset.UtcNow;
                 await db.SaveChangesAsync(ct);
 
-                return new ResyncFailedResult(new ResyncResultDto(server.Id, 0, server.UpdatedAt));
+                return new ResyncFailedResult(new ResyncResultDto(server.Id, 0, server.UpdatedAt, Warning: "discovery failed"));
             }
         });
 

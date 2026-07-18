@@ -109,7 +109,7 @@ public sealed class AdminEndpointsTests : IClassFixture<AdminApiFixture>
         var dto = await response.Content.ReadFromJsonAsync<ServerDto>();
         Assert.NotNull(dto);
         Assert.Equal("renamed", dto.Name);
-        Assert.Equal("http://localhost:7011/mcp", dto.DownstreamUrl);
+        Assert.Equal(new Uri("http://localhost:7011/mcp"), dto.DownstreamUrl);
         Assert.False(dto.Enabled);
     }
 
@@ -144,7 +144,7 @@ public sealed class AdminEndpointsTests : IClassFixture<AdminApiFixture>
             var result = await response.Content.ReadFromJsonAsync<ResyncResultDto>();
             Assert.NotNull(result);
             Assert.Equal(created.Id, result!.ServerId);
-            Assert.Equal(1, result.CapabilitiesCount);
+            Assert.Equal(1, result.ToolsDiscovered);
 
             var after = await GetCapabilitiesAsync(created.Id);
             Assert.Single(after);

@@ -178,6 +178,8 @@ the later `StoreToolRegistry` can live here). Generate the initial EF Core migra
 (`Add-Migration InitialCreate` or `dotnet ef migrations add InitialCreate`).
 **Where:** `src/controlplane/McpGuard.ServerRegistry/` (replace `Class1.cs`),
 `src/controlplane/McpGuard.ServerRegistry/McpGuard.ServerRegistry.csproj`,
+`src/controlplane/McpGuard.ServerRegistry/McpDbContextFactory.cs` (design-time
+`IDesignTimeDbContextFactory<McpDbContext>` required by `dotnet ef migrations`),
 `src/controlplane/McpGuard.ServerRegistry/Migrations/`
 **Depends on:** T4
 **Reuses:** The `ToolRegistration` record from

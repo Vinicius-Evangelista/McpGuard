@@ -9,13 +9,13 @@ public sealed record UpdateServerRequest(string? Name, string? DownstreamUrl, bo
 public sealed record ServerDto(
     string Id,
     string Name,
-    string DownstreamUrl,
+    Uri DownstreamUrl,
     bool Enabled,
     string DiscoveryState,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt);
 
-public sealed record ResyncResultDto(string ServerId, int CapabilitiesCount, DateTimeOffset SyncedAt);
+public sealed record ResyncResultDto(string ServerId, int ToolsDiscovered, DateTimeOffset SyncedAt, string? Warning);
 
 public sealed record PatchCapabilityRequest(bool? Allowed, bool? Visible);
 
@@ -24,6 +24,7 @@ public sealed record CapabilityDto(
     string ServerId,
     string ToolName,
     string Description,
+    string? InputSchemaJson,
     bool Allowed,
     bool Visible,
     DateTimeOffset SyncedAt);
@@ -33,7 +34,7 @@ public static class ServerDtoMapper
     public static ServerDto ToDto(this ServerEntity server) => new(
         server.Id,
         server.Name,
-        server.DownstreamUrl.ToString(),
+        server.DownstreamUrl,
         server.Enabled,
         server.DiscoveryState,
         server.CreatedAt,
@@ -47,6 +48,7 @@ public static class CapabilityDtoMapper
         capability.ServerId,
         capability.ToolName,
         capability.Description,
+        capability.InputSchemaJson,
         capability.Allowed,
         capability.Visible,
         capability.SyncedAt);
